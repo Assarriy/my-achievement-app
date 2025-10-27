@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/achievement_model.dart';
 
@@ -22,23 +23,41 @@ class JsonStorageService {
   Future<List<Achievement>> loadAchievements() async {
     try {
       final file = await _localFile;
-      if (!await file.exists()) {
-        return []; // Kembalikan list kosong jika file belum ada
+
+      // 1. Cek apakah file di penyimpanan HP sudah ada
+      if (await file.exists()) {
+        // JIKA SUDAH ADA: Baca seperti biasa
+        final contents = await file.readAsString();
+        if (contents.isEmpty) {
+          return [];
+        }
+        
+        final List<dynamic> jsonList = jsonDecode(contents) as List<dynamic>;
+        return jsonList
+            .map((json) => Achievement.fromJson(json as Map<String, dynamic>))
+            .toList();
+            
+      } else {
+        // JIKA BELUM ADA: (Ini terjadi setelah flutter run)
+        print("File lokal tidak ditemukan. Memuat dari assets/...");
+        
+        // 2. Baca file dummy dari assets
+        final String jsonString = 
+            await rootBundle.loadString('assets/preload_achievements.json');
+            
+        final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
+        
+        List<Achievement> achievements = jsonList
+            .map((json) => Achievement.fromJson(json as Map<String, dynamic>))
+            .toList();
+            
+        // 3. Simpan data dummy ini ke file di HP
+        //    agar saat diedit/dihapus, perubahannya tersimpan.
+        await saveAchievements(achievements);
+        
+        // 4. Kembalikan data dummy
+        return achievements;
       }
-
-      // Baca file
-      final contents = await file.readAsString();
-      if (contents.isEmpty) {
-        return [];
-      }
-
-      // Ubah String JSON menjadi List<dynamic> (List of Maps)
-      final List<dynamic> jsonList = jsonDecode(contents) as List<dynamic>;
-
-      // Ubah setiap Map menjadi object Achievement
-      return jsonList
-          .map((json) => Achievement.fromJson(json as Map<String, dynamic>))
-          .toList();
     } catch (e) {
       print("Error loading achievements: $e");
       return [];
