@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import '../models/achievement_model.dart';
 import '../services/json_storage_service.dart';
 import '../services/image_service.dart';
-
 enum SortType { byDate, byCategory }
 
 class AchievementProvider with ChangeNotifier {

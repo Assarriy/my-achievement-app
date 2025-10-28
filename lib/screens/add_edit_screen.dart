@@ -10,7 +10,7 @@ class AddEditScreen extends StatefulWidget {
   // Jika achievementToEdit tidak null, kita masuk mode Edit
   final Achievement? achievementToEdit;
 
-  const AddEditScreen({Key? key, this.achievementToEdit}) : super(key: key);
+  const AddEditScreen({super.key, this.achievementToEdit});
 
   @override
   State<AddEditScreen> createState() => _AddEditScreenState();
@@ -257,8 +257,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     TextButton(
-                      child: const Text('Pilih Tanggal'),
                       onPressed: _presentDatePicker,
+                      child: const Text('Pilih Tanggal'),
                     ),
                   ],
                 ),

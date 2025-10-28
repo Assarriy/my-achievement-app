@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import '../providers/achievement_provider.dart';
 import '../widgets/achievement_list_item.dart';
 import 'add_edit_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     // Tonton perubahan pada AchievementProvider
@@ -14,6 +17,15 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text("My Achievements"),
         actions: [
+          // Tombol Profile
+          IconButton(
+            icon: Icon(Icons.person),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (ctx) => ProfileScreen()),
+              );
+            },
+          ),
           // Tombol Sortir
           PopupMenuButton<SortType>(
             icon: Icon(Icons.sort),
