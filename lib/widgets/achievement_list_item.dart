@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:my_achievement_app/models/achievement_model.dart';
-
+import '../models/achievement_model.dart';
 
 class AchievementListItem extends StatelessWidget {
   final Achievement achievement;
   final VoidCallback onDismissed;
 
   const AchievementListItem({
+    super.key,
     required this.achievement,
     required this.onDismissed,
   });

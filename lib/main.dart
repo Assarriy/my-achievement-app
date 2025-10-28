@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/achievement_provider.dart';
+import 'providers/user_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() {
   // Pastikan binding Flutter diinisialisasi sebelum menjalankan app
   // Ini penting jika Anda melakukan operasi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan ChangeNotifierProvider untuk "menyediakan" state
-    // AchievementProvider ke seluruh widget tree di bawahnya.
-    return ChangeNotifierProvider(
-      create: (ctx) => AchievementProvider(), // Membuat instance provider
+    // Gunakan MultiProvider untuk menyediakan multiple providers
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (ctx) => AchievementProvider()),
+        ChangeNotifierProvider(create: (ctx) => UserProvider()),
+      ],
       child: MaterialApp(
         title: 'My Achievements',
         theme: ThemeData(
