@@ -27,7 +27,7 @@ class HomeScreen extends StatelessWidget {
         elevation: 2,
         iconTheme: IconThemeData(color: Colors.white),
         actions: [
-<<<<<<< HEAD
+
           // Tombol Profile
           IconButton(
             icon: Icon(Icons.person),
@@ -38,8 +38,6 @@ class HomeScreen extends StatelessWidget {
             },
           ),
           // Tombol Sortir
-=======
->>>>>>> 961fbbe4453ee5f8639c10a46595af62ea1dd736
           PopupMenuButton<SortType>(
             icon: Icon(Icons.sort, color: Colors.white),
             onSelected: (SortType result) {
