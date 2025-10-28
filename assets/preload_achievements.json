@@ -1,0 +1,18 @@
+[
+    {
+      "id": "1111-aaaa",
+      "title": "Juara 1 Lomba Catur",
+      "date": "2024-10-26T10:00:00.000Z",
+      "category": "Lomba",
+      "description": "Menang lomba catur tingkat kabupaten.",
+      "imagePath": null
+    },
+    {
+      "id": "2222-bbbb",
+      "title": "Sertifikat Flutter Developer",
+      "date": "2024-09-15T10:00:00.000Z",
+      "category": "Sertifikat",
+      "description": "Selesai kursus Flutter intensif selama 3 bulan.",
+      "imagePath": null
+    }
+  ]

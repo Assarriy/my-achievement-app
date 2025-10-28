@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+<<<<<<< HEAD
 import 'package:flutter/foundation.dart';
+=======
+import 'package:flutter/services.dart';
+>>>>>>> 961fbbe4453ee5f8639c10a46595af62ea1dd736
 import 'package:path_provider/path_provider.dart';
 import 'dart:html' as html;
 import '../models/achievement_model.dart';
@@ -23,6 +27,7 @@ class JsonStorageService {
   // FUNGSI MEMBACA DATA
   Future<List<Achievement>> loadAchievements() async {
     try {
+<<<<<<< HEAD
       if (kIsWeb) {
         // Untuk web, gunakan localStorage
         final contents = html.window.localStorage[_fileName];
@@ -39,14 +44,49 @@ class JsonStorageService {
         if (!await file.exists()) {
           return [];
         }
+=======
+      final file = await _localFile;
+
+      // 1. Cek apakah file di penyimpanan HP sudah ada
+      if (await file.exists()) {
+        // JIKA SUDAH ADA: Baca seperti biasa
+>>>>>>> 961fbbe4453ee5f8639c10a46595af62ea1dd736
         final contents = await file.readAsString();
         if (contents.isEmpty) {
           return [];
         }
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 961fbbe4453ee5f8639c10a46595af62ea1dd736
         final List<dynamic> jsonList = jsonDecode(contents) as List<dynamic>;
         return jsonList
             .map((json) => Achievement.fromJson(json as Map<String, dynamic>))
             .toList();
+<<<<<<< HEAD
+=======
+            
+      } else {
+        // JIKA BELUM ADA: (Ini terjadi setelah flutter run)
+        print("File lokal tidak ditemukan. Memuat dari assets/...");
+        
+        // 2. Baca file dummy dari assets
+        final String jsonString = 
+            await rootBundle.loadString('assets/preload_achievements.json');
+            
+        final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
+        
+        List<Achievement> achievements = jsonList
+            .map((json) => Achievement.fromJson(json as Map<String, dynamic>))
+            .toList();
+            
+        // 3. Simpan data dummy ini ke file di HP
+        //    agar saat diedit/dihapus, perubahannya tersimpan.
+        await saveAchievements(achievements);
+        
+        // 4. Kembalikan data dummy
+        return achievements;
+>>>>>>> 961fbbe4453ee5f8639c10a46595af62ea1dd736
       }
     } catch (e) {
       print("Error loading achievements: $e");

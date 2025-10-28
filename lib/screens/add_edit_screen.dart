@@ -7,7 +7,6 @@ import '../providers/achievement_provider.dart';
 import '../services/image_service.dart';
 
 class AddEditScreen extends StatefulWidget {
-  // Jika achievementToEdit tidak null, kita masuk mode Edit
   final Achievement? achievementToEdit;
 
   const AddEditScreen({super.key, this.achievementToEdit});
@@ -16,39 +15,50 @@ class AddEditScreen extends StatefulWidget {
   State<AddEditScreen> createState() => _AddEditScreenState();
 }
 
-class _AddEditScreenState extends State<AddEditScreen> {
-  final _formKey = GlobalKey<FormState>(); // Kunci untuk validasi form
-  final _imageService = ImageService(); // Instance service gambar
+class _AddEditScreenState extends State<AddEditScreen> with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  final _imageService = ImageService();
 
-  // Controllers untuk setiap field
   late TextEditingController _titleController;
   late TextEditingController _categoryController;
   late TextEditingController _descController;
   
   DateTime _selectedDate = DateTime.now();
-  File? _pickedImageFile; // Menyimpan file gambar YANG BARU dipilih
-  String? _existingImagePath; // Menyimpan path gambar LAMA (saat mode edit)
+  File? _pickedImageFile;
+  String? _existingImagePath;
   
   bool _isEditMode = false;
   bool _isLoading = false;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     
-    // Cek apakah ini mode Edit
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
+    _animationController.forward();
+
     if (widget.achievementToEdit != null) {
       final ach = widget.achievementToEdit!;
       _isEditMode = true;
       
-      // Isi controller dengan data yang ada
       _titleController = TextEditingController(text: ach.title);
       _categoryController = TextEditingController(text: ach.category);
       _descController = TextEditingController(text: ach.description);
       _selectedDate = ach.date;
       _existingImagePath = ach.imagePath;
     } else {
-      // Mode Tambah: controller kosong
       _titleController = TextEditingController();
       _categoryController = TextEditingController();
       _descController = TextEditingController();
@@ -57,20 +67,33 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
   @override
   void dispose() {
-    // Selalu dispose controller untuk menghindari memory leak
+    _animationController.dispose();
     _titleController.dispose();
     _categoryController.dispose();
     _descController.dispose();
     super.dispose();
   }
 
-  // Fungsi untuk menampilkan date picker
   Future<void> _presentDatePicker() async {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.red,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.grey[800]!,
+            ),
+            dialogBackgroundColor: Colors.white,
+          ),
+          child: child!,
+        );
+      },
     );
     if (pickedDate != null && pickedDate != _selectedDate) {
       setState(() {
@@ -79,46 +102,38 @@ class _AddEditScreenState extends State<AddEditScreen> {
     }
   }
 
-  // Fungsi untuk memilih gambar
   Future<void> _pickImage() async {
     final pickedFile = await _imageService.pickImage();
     if (pickedFile != null) {
       setState(() {
-        _pickedImageFile = pickedFile; // Simpan file gambar baru
+        _pickedImageFile = pickedFile;
       });
     }
   }
 
-  // Fungsi untuk menyimpan data (Add atau Edit)
   Future<void> _saveForm() async {
-    // 1. Validasi form
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) {
-      return; // Jika form tidak valid, jangan lanjutkan
+      return;
     }
 
-    // 2. Simpan form
-    _formKey.currentState?.save();
     setState(() {
       _isLoading = true;
     });
 
-    // 3. Ambil provider (gunakan .read() di dalam fungsi)
     final provider = context.read<AchievementProvider>();
 
     try {
       if (_isEditMode) {
-        // Panggil fungsi UPDATE (pastikan Anda sudah menambahkannya di provider)
         await provider.updateAchievement(
           id: widget.achievementToEdit!.id,
           title: _titleController.text,
           date: _selectedDate,
           category: _categoryController.text,
           description: _descController.text,
-          newImageFile: _pickedImageFile, // Kirim file baru jika ada
+          newImageFile: _pickedImageFile,
         );
       } else {
-        // Panggil fungsi ADD
         await provider.addAchievement(
           title: _titleController.text,
           date: _selectedDate,
@@ -128,156 +143,356 @@ class _AddEditScreenState extends State<AddEditScreen> {
         );
       }
       
-      // 5. Kembali ke halaman sebelumnya
       if (mounted) {
-         Navigator.of(context).pop();
+        Navigator.of(context).pop();
       }
 
     } catch (error) {
-      // Tampilkan error jika gagal
       setState(() {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: $error')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Gagal menyimpan: $error'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Widget untuk menampilkan preview gambar
+  Widget _buildImagePreview() {
     Widget imagePreview = Container(
       width: 150,
       height: 150,
       decoration: BoxDecoration(
-        border: Border.all(width: 1, color: Colors.grey),
-        borderRadius: BorderRadius.circular(10),
+        border: Border.all(width: 1, color: Colors.red.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.grey[50],
       ),
       alignment: Alignment.center,
-      child: const Text('Belum ada foto', textAlign: TextAlign.center),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.photo_camera, color: Colors.red.withOpacity(0.7), size: 40),
+          SizedBox(height: 8),
+          Text(
+            'Tambahkan\nFoto',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
 
     if (_pickedImageFile != null) {
-      // 1. Prioritas: Tampilkan gambar baru yang dipilih
-      imagePreview = Image.file(
-        _pickedImageFile!,
-        fit: BoxFit.cover,
-        width: 150,
-        height: 150,
+      imagePreview = ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.file(
+          _pickedImageFile!,
+          fit: BoxFit.cover,
+          width: 150,
+          height: 150,
+        ),
       );
     } else if (_existingImagePath != null) {
-      // 2. Jika tidak ada gambar baru, tampilkan gambar lama (mode edit)
-      imagePreview = Image.file(
-        File(_existingImagePath!),
-        fit: BoxFit.cover,
-        width: 150,
-        height: 150,
+      imagePreview = ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.file(
+          File(_existingImagePath!),
+          fit: BoxFit.cover,
+          width: 150,
+          height: 150,
+        ),
       );
     }
 
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: imagePreview,
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String? Function(String?) validator,
+    TextInputAction textInputAction = TextInputAction.next,
+    int maxLines = 1,
+  }) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        controller: controller,
+        style: TextStyle(color: Colors.grey[800]),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.grey[600]),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.red),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.red),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.red),
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+        ),
+        textInputAction: textInputAction,
+        maxLines: maxLines,
+        validator: validator,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Prestasi' : 'Tambah Prestasi'),
+        title: Text(
+          _isEditMode ? 'Edit Prestasi' : 'Tambah Prestasi',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        elevation: 2,
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
-          // Tombol Simpan
           if (_isLoading)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(right: 16.0),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              ),
             )
           else
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveForm,
+            AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              child: IconButton(
+                icon: Icon(Icons.save, color: Colors.white),
+                onPressed: _saveForm,
+              ),
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Input Gambar ---
-                Row(
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Color(0xFFFEF2F2),
+              ],
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: imagePreview,
+                    // --- Image Section ---
+                    Center(
+                      child: Column(
+                        children: [
+                          _buildImagePreview(),
+                          SizedBox(height: 16),
+                          AnimatedContainer(
+                            duration: Duration(milliseconds: 300),
+                            child: ElevatedButton.icon(
+                              icon: Icon(Icons.image, color: Colors.white),
+                              label: Text(
+                                'Pilih Foto',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onPressed: _pickImage,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.image),
-                        label: const Text('Pilih Foto'),
-                        onPressed: _pickImage,
+                    SizedBox(height: 30),
+
+                    // --- Title Field ---
+                    _buildTextField(
+                      controller: _titleController,
+                      label: 'Judul Prestasi',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Judul tidak boleh kosong';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    // --- Category Field ---
+                    _buildTextField(
+                      controller: _categoryController,
+                      label: 'Kategori (Lomba, Sertifikat, Proyek)',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Kategori tidak boleh kosong';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    // --- Date Picker ---
+                    AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.red.withOpacity(0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tanggal Prestasi',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                DateFormat('d MMMM yyyy').format(_selectedDate),
+                                style: TextStyle(
+                                  color: Colors.grey[800],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          AnimatedContainer(
+                            duration: Duration(milliseconds: 300),
+                            child: ElevatedButton(
+                              child: Text(
+                                'Pilih Tanggal',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onPressed: _presentDatePicker,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // --- Description Field ---
+                    _buildTextField(
+                      controller: _descController,
+                      label: 'Deskripsi Prestasi',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Deskripsi tidak boleh kosong';
+                        }
+                        return null;
+                      },
+                      maxLines: 4,
+                    ),
+
+                    // --- Save Button ---
+                    SizedBox(height: 30),
+                    AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        child: _isLoading
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'Menyimpan...',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                _isEditMode ? 'Update Prestasi' : 'Simpan Prestasi',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                        onPressed: _isLoading ? null : _saveForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                
-                // --- Input Judul ---
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(labelText: 'Judul Prestasi'),
-                  textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Judul tidak boleh kosong';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-
-                // --- Input Kategori ---
-                TextFormField(
-                  controller: _categoryController,
-                  decoration: const InputDecoration(labelText: 'Kategori (Lomba, Sertifikat, Proyek)'),
-                  textInputAction: TextInputAction.next,
-                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Kategori tidak boleh kosong';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // --- Input Tanggal ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tanggal: ${DateFormat('d MMMM yyyy').format(_selectedDate)}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    TextButton(
-                      onPressed: _presentDatePicker,
-                      child: const Text('Pilih Tanggal'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // --- Input Deskripsi ---
-                TextFormField(
-                  controller: _descController,
-                  decoration: const InputDecoration(labelText: 'Deskripsi'),
-                  maxLines: 4,
-                  keyboardType: TextInputType.multiline,
-                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Deskripsi tidak boleh kosong';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         ),
