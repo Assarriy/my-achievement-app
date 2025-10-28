@@ -1,71 +1,76 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Anda mungkin perlu menambahkan package 'intl'
-import '../models/achievement_model.dart';
-import '../screens/add_edit_screen.dart'; // Untuk navigasi edit
+import 'package:my_achievement_app/models/achievement_model.dart';
+
 
 class AchievementListItem extends StatelessWidget {
   final Achievement achievement;
-  final VoidCallback onDismissed; // Fungsi yang dipanggil saat di-swipe
+  final VoidCallback onDismissed;
 
   const AchievementListItem({
-    Key? key,
     required this.achievement,
     required this.onDismissed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Format tanggal agar mudah dibaca
-    final formattedDate = DateFormat('d MMMM yyyy').format(achievement.date);
-
-    return Dismissible(
-      key: Key(achievement.id), // Kunci unik untuk setiap item
-      direction: DismissDirection.endToStart, // Geser dari kanan ke kiri
-      onDismissed: (direction) {
-        onDismissed(); // Panggil fungsi hapus dari provider
-      },
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20.0),
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-        ),
-      ),
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.red.withOpacity(0.2), width: 1),
+        ),
         child: ListTile(
-          // Menampilkan gambar jika ada, jika tidak, tampilkan ikon kategori
-          leading: achievement.imagePath != null
-              ? CircleAvatar(
-                  backgroundImage: FileImage(File(achievement.imagePath!)),
-                  radius: 25,
-                )
-              : CircleAvatar(
-                  radius: 25,
-                  child: Icon(Icons.star), // Ganti dengan ikon per kategori jika mau
-                ),
+          contentPadding: EdgeInsets.all(16),
+          leading: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red, width: 1),
+            ),
+            child: Icon(Icons.emoji_events, color: Colors.red, size: 24),
+          ),
           title: Text(
             achievement.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.grey[800],
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
-          subtitle: Text('${achievement.category} - $formattedDate'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            // Navigasi ke halaman Edit
-            // (Anda perlu menyesuaikan AddEditScreen untuk menerima data achievement)
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (ctx) => AddEditScreen(
-                  // achievementToEdit: achievement, // Kirim data untuk mode edit
-                ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 4),
+              Text(
+                achievement.description,
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            );
-          },
+              SizedBox(height: 4),
+              Text(
+                _formatDate(achievement.date),
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+            ],
+          ),
+          trailing: Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.grey[400],
+            size: 16,
+          ),
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
   }
 }
