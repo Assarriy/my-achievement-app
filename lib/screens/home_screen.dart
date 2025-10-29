@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_achievement_app/screens/detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/achievement_provider.dart';
 import '../widgets/achievement_list_item.dart';
@@ -173,6 +174,18 @@ class HomeScreen extends StatelessWidget {
                   _showDeleteAnimation(context);
                   provider.deleteAchievement(achievement.id);
                 },
+                onTap: () {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => DetailScreen(
+          title: achievement.title,
+          description: achievement.description,
+          imageUrl: achievement.imagePath ??
+              'https://via.placeholder.com/600x400?text=No+Image',
+        ),
+      ),
+    );
+  },
               ),
             ),
           );
