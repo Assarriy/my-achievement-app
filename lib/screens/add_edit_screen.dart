@@ -4,96 +4,72 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/achievement_model.dart';
 import '../providers/achievement_provider.dart';
+import '../providers/category_provider.dart'; // <-- Import provider kategori
 import '../services/image_service.dart';
+import 'manage_categories_screen.dart'; // <-- Import halaman manage
 
 class AddEditScreen extends StatefulWidget {
+  // Jika achievementToEdit tidak null, kita masuk mode Edit
   final Achievement? achievementToEdit;
 
-  const AddEditScreen({super.key, this.achievementToEdit});
+  const AddEditScreen({Key? key, this.achievementToEdit}) : super(key: key);
 
   @override
   State<AddEditScreen> createState() => _AddEditScreenState();
 }
 
-class _AddEditScreenState extends State<AddEditScreen> with SingleTickerProviderStateMixin {
+class _AddEditScreenState extends State<AddEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _imageService = ImageService();
 
+  // Controllers untuk setiap field
   late TextEditingController _titleController;
-  late TextEditingController _categoryController;
   late TextEditingController _descController;
-  
+
   DateTime _selectedDate = DateTime.now();
-  File? _pickedImageFile;
-  String? _existingImagePath;
-  
+  File? _pickedImageFile; // Menyimpan file gambar YANG BARU dipilih
+  String? _existingImagePath; // Menyimpan path gambar LAMA (saat mode edit)
+
   bool _isEditMode = false;
   bool _isLoading = false;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+
+  // Variabel baru untuk menyimpan nama kategori yang dipilih
+  String? _selectedCategoryName;
 
   @override
   void initState() {
     super.initState();
-    
-    _animationController = AnimationController(
-      duration: Duration(milliseconds: 500),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-    
-    _animationController.forward();
 
     if (widget.achievementToEdit != null) {
       final ach = widget.achievementToEdit!;
       _isEditMode = true;
-      
+
       _titleController = TextEditingController(text: ach.title);
-      _categoryController = TextEditingController(text: ach.category);
       _descController = TextEditingController(text: ach.description);
       _selectedDate = ach.date;
       _existingImagePath = ach.imagePath;
+      _selectedCategoryName = ach.category; // Set kategori yang ada
     } else {
+      // Mode Tambah: controller kosong
       _titleController = TextEditingController();
-      _categoryController = TextEditingController();
       _descController = TextEditingController();
     }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _titleController.dispose();
-    _categoryController.dispose();
     _descController.dispose();
     super.dispose();
   }
 
+  // Fungsi untuk menampilkan date picker
   Future<void> _presentDatePicker() async {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.red,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.grey[800]!,
-            ),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child!,
-        );
-      },
+      firstDate: DateTime(2000), // Batas awal tanggal
+      lastDate: DateTime.now(), // Tidak bisa memilih tanggal di masa depan
     );
     if (pickedDate != null && pickedDate != _selectedDate) {
       setState(() {
@@ -102,6 +78,7 @@ class _AddEditScreenState extends State<AddEditScreen> with SingleTickerProvider
     }
   }
 
+  // Fungsi untuk memilih gambar
   Future<void> _pickImage() async {
     final pickedFile = await _imageService.pickImage();
     if (pickedFile != null) {
@@ -111,388 +88,254 @@ class _AddEditScreenState extends State<AddEditScreen> with SingleTickerProvider
     }
   }
 
+  // Fungsi untuk menyimpan data (Add atau Edit)
   Future<void> _saveForm() async {
+    // 1. Validasi form
     final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) {
-      return;
+
+    // 2. Validasi Kategori (pastikan satu dipilih)
+    if (_selectedCategoryName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan pilih satu kategori.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return; // Hentikan jika kategori belum dipilih
     }
 
+    if (!isValid) {
+      return; // Hentikan jika form tidak valid
+    }
+
+    _formKey.currentState?.save();
     setState(() {
       _isLoading = true;
     });
 
+    // 3. Ambil provider (gunakan .read() di dalam fungsi)
     final provider = context.read<AchievementProvider>();
 
     try {
       if (_isEditMode) {
+        // Panggil fungsi UPDATE
         await provider.updateAchievement(
           id: widget.achievementToEdit!.id,
           title: _titleController.text,
           date: _selectedDate,
-          category: _categoryController.text,
+          category: _selectedCategoryName!, // Kirim kategori terpilih
           description: _descController.text,
           newImageFile: _pickedImageFile,
         );
       } else {
+        // Panggil fungsi ADD
         await provider.addAchievement(
           title: _titleController.text,
           date: _selectedDate,
-          category: _categoryController.text,
+          category: _selectedCategoryName!, // Kirim kategori terpilih
           description: _descController.text,
           tempImage: _pickedImageFile,
         );
       }
-      
+
+      // 5. Kembali ke halaman sebelumnya
       if (mounted) {
         Navigator.of(context).pop();
       }
-
     } catch (error) {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Gagal menyimpan: $error'),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $error')));
     }
   }
 
-  Widget _buildImagePreview() {
-    Widget imagePreview = Container(
-      width: 150,
-      height: 150,
-      decoration: BoxDecoration(
-        border: Border.all(width: 1, color: Colors.red.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(15),
-        color: Colors.grey[50],
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.photo_camera, color: Colors.red.withOpacity(0.7), size: 40),
-          SizedBox(height: 8),
-          Text(
-            'Tambahkan\nFoto',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
+  // Widget untuk membangun daftar Category Chip
+  Widget _buildCategoryChips() {
+    // Ambil daftar kategori dari provider
+    // Gunakan .watch() agar UI rebuild jika ada kategori baru
+    final categories = context.watch<CategoryProvider>().categories;
 
-    if (_pickedImageFile != null) {
-      imagePreview = ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.file(
-          _pickedImageFile!,
-          fit: BoxFit.cover,
-          width: 150,
-          height: 150,
-        ),
-      );
-    } else if (_existingImagePath != null) {
-      imagePreview = ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.file(
-          File(_existingImagePath!),
-          fit: BoxFit.cover,
-          width: 150,
-          height: 150,
+    if (categories.isEmpty) {
+      return const Center(
+        child: Text(
+          'Tidak ada kategori.\nSilakan tambahkan di halaman "Kelola".',
+          textAlign: TextAlign.center,
         ),
       );
     }
 
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      child: imagePreview,
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String? Function(String?) validator,
-    TextInputAction textInputAction = TextInputAction.next,
-    int maxLines = 1,
-  }) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        controller: controller,
-        style: TextStyle(color: Colors.grey[800]),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.grey[600]),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
-        ),
-        textInputAction: textInputAction,
-        maxLines: maxLines,
-        validator: validator,
-      ),
+    // Wrap akan otomatis memindahkan chip ke baris baru
+    return Wrap(
+      spacing: 8.0, // Jarak horizontal antar chip
+      runSpacing: 4.0, // Jarak vertikal antar baris chip
+      children: categories.map((category) {
+        return ChoiceChip(
+          label: Text(category.name),
+          selected: _selectedCategoryName == category.name,
+          onSelected: (isSelected) {
+            setState(() {
+              if (isSelected) {
+                _selectedCategoryName = category.name;
+              }
+            });
+          },
+        );
+      }).toList(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Widget untuk menampilkan preview gambar
+    Widget imagePreview = Container(
+      width: 150,
+      height: 150,
+      decoration: BoxDecoration(
+        border: Border.all(width: 1, color: Colors.grey),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: const Text('Belum ada foto', textAlign: TextAlign.center),
+    );
+
+    if (_pickedImageFile != null) {
+      // Prioritas 1: Tampilkan gambar baru yang dipilih
+      imagePreview = Image.file(
+        _pickedImageFile!,
+        fit: BoxFit.cover,
+        width: 150,
+        height: 150,
+      );
+    } else if (_existingImagePath != null) {
+      // Prioritas 2: Tampilkan gambar lama (mode edit)
+      imagePreview = Image.file(
+        File(_existingImagePath!),
+        fit: BoxFit.cover,
+        width: 150,
+        height: 150,
+      );
+    }
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          _isEditMode ? 'Edit Prestasi' : 'Tambah Prestasi',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.red,
-        elevation: 2,
-        iconTheme: IconThemeData(color: Colors.white),
+        title: Text(_isEditMode ? 'Edit Prestasi' : 'Tambah Prestasi'),
         actions: [
+          // Tombol Simpan
           if (_isLoading)
-            Padding(
+            const Padding(
               padding: EdgeInsets.only(right: 16.0),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(color: Colors.blue),
               ),
             )
           else
-            AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              child: IconButton(
-                icon: Icon(Icons.save, color: Colors.white),
-                onPressed: _saveForm,
-              ),
-            ),
+            IconButton(icon: const Icon(Icons.save), onPressed: _saveForm),
         ],
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white,
-                Color(0xFFFEF2F2),
-              ],
-            ),
-          ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- Input Gambar ---
+                Row(
                   children: [
-                    // --- Image Section ---
-                    Center(
-                      child: Column(
-                        children: [
-                          _buildImagePreview(),
-                          SizedBox(height: 16),
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            child: ElevatedButton.icon(
-                              icon: Icon(Icons.image, color: Colors.white),
-                              label: Text(
-                                'Pilih Foto',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              onPressed: _pickImage,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: imagePreview,
                     ),
-                    SizedBox(height: 30),
-
-                    // --- Title Field ---
-                    _buildTextField(
-                      controller: _titleController,
-                      label: 'Judul Prestasi',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Judul tidak boleh kosong';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    // --- Category Field ---
-                    _buildTextField(
-                      controller: _categoryController,
-                      label: 'Kategori (Lomba, Sertifikat, Proyek)',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Kategori tidak boleh kosong';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    // --- Date Picker ---
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 300),
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.red.withOpacity(0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Tanggal Prestasi',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                DateFormat('d MMMM yyyy').format(_selectedDate),
-                                style: TextStyle(
-                                  color: Colors.grey[800],
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            child: ElevatedButton(
-                              child: Text(
-                                'Pilih Tanggal',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              onPressed: _presentDatePicker,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // --- Description Field ---
-                    _buildTextField(
-                      controller: _descController,
-                      label: 'Deskripsi Prestasi',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Deskripsi tidak boleh kosong';
-                        }
-                        return null;
-                      },
-                      maxLines: 4,
-                    ),
-
-                    // --- Save Button ---
-                    SizedBox(height: 30),
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 300),
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        child: _isLoading
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'Menyimpan...',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              )
-                            : Text(
-                                _isEditMode ? 'Update Prestasi' : 'Simpan Prestasi',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                        onPressed: _isLoading ? null : _saveForm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.image),
+                        label: const Text('Pilih Foto'),
+                        onPressed: _pickImage,
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 24),
+
+                // --- Input Judul ---
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Judul Prestasi',
+                  ),
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Judul tidak boleh kosong';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // --- Input Kategori (BARU) ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Kategori',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextButton(
+                      child: const Text('Kelola'),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (ctx) => const ManageCategoriesScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                _buildCategoryChips(),
+
+                // --- AKHIR INPUT KATEGORI ---
+                const SizedBox(height: 24),
+
+                // --- Input Tanggal ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tanggal: ${DateFormat('d MMMM yyyy').format(_selectedDate)}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    OutlinedButton(
+                      child: const Text('Pilih Tanggal'),
+                      onPressed: _presentDatePicker,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // --- Input Deskripsi ---
+                TextFormField(
+                  controller: _descController,
+                  decoration: const InputDecoration(
+                    labelText: 'Deskripsi',
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 4,
+                  keyboardType: TextInputType.multiline,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Deskripsi tidak boleh kosong';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
           ),
         ),
