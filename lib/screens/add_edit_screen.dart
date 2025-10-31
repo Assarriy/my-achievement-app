@@ -11,7 +11,7 @@ import 'manage_categories_screen.dart';
 class AddEditScreen extends StatefulWidget {
   final Achievement? achievementToEdit;
 
-  const AddEditScreen({Key? key, this.achievementToEdit}) : super(key: key);
+  const AddEditScreen({super.key, this.achievementToEdit});
 
   @override
   State<AddEditScreen> createState() => _AddEditScreenState();

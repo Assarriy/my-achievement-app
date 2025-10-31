@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/achievement_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/user_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/profile_screen.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -12,7 +14,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +25,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (ctx) => CategoryProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => UserProvider(),
         ),
       ],
       child: MaterialApp(
@@ -74,6 +79,7 @@ class MyApp extends StatelessWidget {
         home: const SplashScreen(),
         routes: {
           '/home': (ctx) => const HomeScreen(),
+          '/profile': (ctx) => const ProfileScreen(),
         },
       ),
     );

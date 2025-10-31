@@ -6,7 +6,7 @@ import 'add_edit_screen.dart';
 import 'manage_categories_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -180,11 +180,65 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
             actions: [
-              // Animated Sort Button
+              // Animated Category Button
               ScaleTransition(
                 scale: _scaleAnimation,
                 child: Container(
                   margin: EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.category, color: Colors.white),
+                    tooltip: 'Kelola Kategori',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(1.0, 0.0),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOut,
+                              )),
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // Animated Profile Button
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.person, color: Colors.white),
+                    tooltip: 'Profile',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/profile');
+                    },
+                  ),
+                ),
+              ),
+
+              // Animated Sort Button
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  margin: EdgeInsets.only(right: 8, left: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
@@ -218,41 +272,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-
-              // Animated Category Button
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: Container(
-                  margin: EdgeInsets.only(right: 8, left: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.category, color: Colors.white),
-                    tooltip: 'Kelola Kategori',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            return SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(1.0, 0.0),
-                                end: Offset.zero,
-                              ).animate(CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOut,
-                              )),
-                              child: child,
-                            );
-                          },
-                        ),
-                      );
-                    },
                   ),
                 ),
               ),
@@ -465,15 +484,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ],
           ),
           child: FloatingActionButton(
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Icon(
-                Icons.add,
-                size: 28,
-                color: Colors.white,
-              ),
-            ),
             backgroundColor: _colorAnimation.value,
             foregroundColor: Colors.white,
             onPressed: () {
@@ -495,6 +505,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               );
             },
             elevation: 0,
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: Icon(
+                Icons.add,
+                size: 28,
+                color: Colors.white,
+              ),
+            ),
           ),
         );
       },
