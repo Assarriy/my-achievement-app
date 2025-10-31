@@ -3,12 +3,17 @@ import 'package:provider/provider.dart';
 import 'providers/achievement_provider.dart';
 import 'providers/category_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
+<<<<<<< HEAD
+  WidgetsFlutterBinding.ensureInitialized();
+=======
   // Ini penting untuk memastikan package seperti path_provider
   // bisa berjalan sebelum runApp() dipanggil.
   WidgetsFlutterBinding.ensureInitialized();
   
+>>>>>>> f5f55c91bea006535cabfec94592e275fe521ae3
   runApp(const MyApp());
 }
 
@@ -17,8 +22,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
+=======
     // Gunakan MultiProvider untuk mendaftarkan semua provider Anda
     // di level tertinggi aplikasi.
+>>>>>>> f5f55c91bea006535cabfec94592e275fe521ae3
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -34,10 +42,13 @@ class MyApp extends StatelessWidget {
         
         // Menambahkan tema yang konsisten untuk aplikasi
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primarySwatch: Colors.red, // 🔴 ubah ke merah biar nyatu dengan tema splash
           visualDensity: VisualDensity.adaptivePlatformDensity,
+<<<<<<< HEAD
+=======
           
           // Tema untuk AppBar
+>>>>>>> f5f55c91bea006535cabfec94592e275fe521ae3
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.white,
             elevation: 1,
@@ -48,11 +59,16 @@ class MyApp extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+<<<<<<< HEAD
+          floatingActionButtonTheme: const FloatingActionButtonThemeData(
+            backgroundColor: Colors.red,
+=======
           
           // Tema untuk Floating Action Button (FAB)
           floatingActionButtonTheme: FloatingActionButtonThemeData(
             backgroundColor: Colors.blue.shade800,
             foregroundColor: Colors.white,
+>>>>>>> f5f55c91bea006535cabfec94592e275fe521ae3
           ),
 
           // Tema untuk ChoiceChip (di halaman Add/Edit)
@@ -79,9 +95,19 @@ class MyApp extends StatelessWidget {
             ),
           )
         ),
+<<<<<<< HEAD
+        debugShowCheckedModeBanner: false,
+
+        // ⬇️ ubah dari HomeScreen ke SplashScreen
+        home: const SplashScreen(),
+        routes: {
+          '/home': (ctx) => const HomeScreen(),
+        },
+=======
         
         // Layar pertama yang akan dibuka
         home: HomeScreen(),
+>>>>>>> f5f55c91bea006535cabfec94592e275fe521ae3
       ),
     );
   }
