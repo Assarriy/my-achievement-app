@@ -3,12 +3,10 @@ import 'package:provider/provider.dart';
 import 'providers/achievement_provider.dart';
 import 'providers/user_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
-  // Pastikan binding Flutter diinisialisasi sebelum menjalankan app
-  // Ini penting jika Anda melakukan operasi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
-
   runApp(const MyApp());
 }
 
@@ -17,7 +15,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan MultiProvider untuk menyediakan multiple providers
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (ctx) => AchievementProvider()),
@@ -26,9 +23,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'My Achievements',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primarySwatch: Colors.red, // 🔴 ubah ke merah biar nyatu dengan tema splash
           visualDensity: VisualDensity.adaptivePlatformDensity,
-          // Tema untuk AppBar
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.white,
             elevation: 1,
@@ -39,13 +35,17 @@ class MyApp extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          // Tema untuk FAB
-          floatingActionButtonTheme: FloatingActionButtonThemeData(
-            backgroundColor: Colors.blue.shade800,
+          floatingActionButtonTheme: const FloatingActionButtonThemeData(
+            backgroundColor: Colors.red,
           ),
         ),
         debugShowCheckedModeBanner: false,
-        home: HomeScreen(), // Layar utama Anda
+
+        // ⬇️ ubah dari HomeScreen ke SplashScreen
+        home: const SplashScreen(),
+        routes: {
+          '/home': (ctx) => const HomeScreen(),
+        },
       ),
     );
   }
