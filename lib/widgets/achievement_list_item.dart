@@ -315,11 +315,9 @@ class _AchievementListItemState extends State<AchievementListItem>
                                               const Spacer(),
 
                                               // Category badge jika ada
-                                              if (widget.achievement.category !=
-                                                      null &&
-                                                  widget
+                                              if (widget
                                                       .achievement
-                                                      .category!
+                                                      .category
                                                       .isNotEmpty)
                                                 Container(
                                                   padding:
@@ -344,7 +342,7 @@ class _AchievementListItemState extends State<AchievementListItem>
                                                   child: Text(
                                                     widget
                                                         .achievement
-                                                        .category!,
+                                                        .category,
                                                     style: TextStyle(
                                                       color: Color(0xFFE53935),
                                                       fontSize: 10,

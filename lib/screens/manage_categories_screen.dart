@@ -4,7 +4,7 @@ import '../models/category_model.dart';
 import '../providers/category_provider.dart';
 
 class ManageCategoriesScreen extends StatelessWidget {
-  const ManageCategoriesScreen({Key? key}) : super(key: key);
+  const ManageCategoriesScreen({super.key});
 
   // Fungsi untuk menampilkan dialog Add/Edit
   void _showCategoryDialog(BuildContext context, {Category? category}) {
