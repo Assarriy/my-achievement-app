@@ -1,7 +1,6 @@
-// lib/screens/detail_screen.dart
 import 'package:flutter/material.dart';
 
-class DetailScreen extends StatelessWidget {
+class DetailScreen extends StatefulWidget {
   final String title;
   final String description;
   final String imageUrl;
@@ -14,290 +13,590 @@ class DetailScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            letterSpacing: 0.5,
-          ),
-        ),
-        backgroundColor: Colors.red,
-        elevation: 0,
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red, Colors.redAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Fitur share segera hadir!')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
+  State<DetailScreen> createState() => _DetailScreenState();
+}
+
+class _DetailScreenState extends State<DetailScreen> 
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Color?> _colorAnimation;
+
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeInOutCubic),
+    ));
+
+    _slideAnimation = Tween<double>(
+      begin: 60.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.1, 0.6, curve: Curves.easeOutCubic),
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.2, 0.9, curve: Curves.elasticOut),
+    ));
+
+    _colorAnimation = ColorTween(
+      begin: Color(0xFF667EEA).withOpacity(0.3),
+      end: Color(0xFF667EEA),
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOutCubic,
+    ));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleFavorite() {
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            // === HERO IMAGE + BADGE ===
-            Stack(
-              children: [
-                Hero(
-                  tag: 'item-$title',
-                  child: Container(
-                    width: double.infinity,
-                    height: 300,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(30),
-                      ),
-                      image: DecorationImage(
-                        image: NetworkImage(imageUrl),
-                        fit: BoxFit.cover,
-                        onError: (_, __) {},
-                      ),
-                    ),
-                    child: imageUrl.isEmpty || imageUrl.contains('placeholder')
-                        ? Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Colors.red.shade100, Colors.red.shade50],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(30),
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.emoji_events,
-                                size: 100,
-                                color: Colors.red,
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                ),
-                // Badge "Prestasi"
-                Positioned(
-                  top: 20,
-                  right: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.star, color: Colors.yellow, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'PRESTASI',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // === JUDUL + ICON ===
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.red, width: 2),
-                    ),
-                    child: const Icon(Icons.emoji_events, color: Colors.red, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // === DIVIDER MERAH ===
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.red, Colors.transparent],
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // === DESKRIPSI DENGAN CARD ===
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.shade200, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.shade100.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.description, color: Colors.red, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Deskripsi',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                        height: 1.7,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // === TOMBOL AKSI BESAR ===
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Row(
-                              children: [
-                                Icon(Icons.favorite, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text('Berhasil ditambahkan ke Favorit!'),
-                              ],
-                            ),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            margin: const EdgeInsets.all(16),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.favorite_border, size: 28),
-                      label: const Text(
-                        'Tambah ke Favorit',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 6,
-                        shadowColor: Colors.red.shade300,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.red, width: 2),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        // Edit action
-                      },
-                      icon: const Icon(Icons.edit, color: Colors.red),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
+            Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, 
+              color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Text(_isFavorite 
+              ? 'Added to Favorites!' 
+              : 'Removed from Favorites!'),
           ],
         ),
+        backgroundColor: Color(0xFF667EEA),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 2),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFF0F172A),
+      body: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return CustomScrollView(
+            physics: BouncingScrollPhysics(),
+            slivers: [
+              // Modern App Bar with Hero Image
+              SliverAppBar(
+                expandedHeight: 320.0,
+                floating: false,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    children: [
+                      // Hero Image
+                      Hero(
+                        tag: 'item-${widget.title}',
+                        child: Container(
+                          width: double.infinity,
+                          height: 400,
+                          decoration: BoxDecoration(
+                            image: widget.imageUrl.isNotEmpty && 
+                                  !widget.imageUrl.contains('placeholder')
+                                ? DecorationImage(
+                                    image: NetworkImage(widget.imageUrl),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                            gradient: widget.imageUrl.isEmpty || 
+                                    widget.imageUrl.contains('placeholder')
+                                ? LinearGradient(
+                                    colors: [
+                                      Color(0xFF667EEA).withOpacity(0.1),
+                                      Color(0xFF1E293B),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : null,
+                          ),
+                          child: widget.imageUrl.isEmpty || 
+                                widget.imageUrl.contains('placeholder')
+                              ? Center(
+                                  child: Icon(
+                                    Icons.auto_awesome,
+                                    size: 100,
+                                    color: Color(0xFF667EEA).withOpacity(0.3),
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                      
+                      // Gradient Overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Color(0xFF0F172A).withOpacity(0.9),
+                              Colors.transparent,
+                              Colors.transparent,
+                            ],
+                            stops: [0.1, 0.5, 1.0],
+                          ),
+                        ),
+                      ),
+                      
+                      // Background Elements
+                      Positioned(
+                        top: 50,
+                        right: -30,
+                        child: AnimatedContainer(
+                          duration: Duration(seconds: 20),
+                          curve: Curves.linear,
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              colors: [
+                                Color(0xFF667EEA).withOpacity(0.1),
+                                Colors.transparent,
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      margin: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.share, color: Colors.white),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(Icons.share, color: Colors.white),
+                                  SizedBox(width: 12),
+                                  Text('Share feature coming soon!'),
+                                ],
+                              ),
+                              backgroundColor: Color(0xFF667EEA),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Content
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  Transform.translate(
+                    offset: Offset(0, _slideAnimation.value),
+                    child: Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title Section
+                              Row(
+                                children: [
+                                  ScaleTransition(
+                                    scale: _scaleAnimation,
+                                    child: Container(
+                                      padding: EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFF667EEA),
+                                            Color(0xFF764BA2),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color(0xFF667EEA).withOpacity(0.4),
+                                            blurRadius: 15,
+                                            offset: Offset(2, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        Icons.auto_awesome,
+                                        color: Colors.white,
+                                        size: 32,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          widget.title,
+                                          style: TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Color(0xFF667EEA).withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Color(0xFF667EEA).withOpacity(0.3),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'ACHIEVEMENT',
+                                            style: TextStyle(
+                                              color: Color(0xFF667EEA),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                              letterSpacing: 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 32),
+
+                              // Animated Divider
+                              Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Color(0xFF667EEA),
+                                      Color(0xFF667EEA).withOpacity(0.3),
+                                      Colors.transparent,
+                                    ],
+                                    stops: [0.0, 0.5, 1.0],
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+
+                              SizedBox(height: 32),
+
+                              // Description Section
+                              ScaleTransition(
+                                scale: _scaleAnimation,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFF1E293B),
+                                        Color(0xFF334155).withOpacity(0.5),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Color(0xFF475569),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Color(0xFF667EEA).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(Icons.description, 
+                                              color: Color(0xFF667EEA), size: 24),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            'Description',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 18,
+                                              color: Colors.white,
+                                              letterSpacing: -0.3,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        widget.description,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Color(0xFF94A3B8),
+                                          height: 1.7,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: 40),
+
+                              // Action Buttons
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: AnimatedBuilder(
+                                      animation: _colorAnimation,
+                                      builder: (context, child) {
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(16),
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Color(0xFF667EEA),
+                                                Color(0xFF764BA2),
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: _colorAnimation.value!.withOpacity(0.5),
+                                                blurRadius: 20,
+                                                offset: Offset(0, 8),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: _toggleFavorite,
+                                              borderRadius: BorderRadius.circular(16),
+                                              splashColor: Colors.white.withOpacity(0.2),
+                                              highlightColor: Colors.white.withOpacity(0.1),
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(vertical: 18),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    AnimatedSwitcher(
+                                                      duration: Duration(milliseconds: 300),
+                                                      child: Icon(
+                                                        _isFavorite 
+                                                            ? Icons.favorite 
+                                                            : Icons.favorite_border,
+                                                        key: ValueKey(_isFavorite),
+                                                        color: Colors.white,
+                                                        size: 24,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 12),
+                                                    Text(
+                                                      _isFavorite 
+                                                          ? 'In Favorites' 
+                                                          : 'Add to Favorites',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+                                  ScaleTransition(
+                                    scale: _scaleAnimation,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFF1E293B),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Color(0xFF475569),
+                                          width: 1.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.3),
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () {
+                                            // Edit action
+                                          },
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Container(
+                                            padding: EdgeInsets.all(16),
+                                            child: Icon(
+                                              Icons.edit,
+                                              color: Color(0xFF667EEA),
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 32),
+
+                              // Additional Info Section
+                              ScaleTransition(
+                                scale: _scaleAnimation,
+                                child: Container(
+                                  padding: EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF1E293B),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Color(0xFF475569),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _buildInfoItem(Icons.calendar_today, 'Date', 'Today'),
+                                      _buildInfoItem(Icons.category, 'Category', 'Achievement'),
+                                      _buildInfoItem(Icons.visibility, 'Views', '156'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String title, String value) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Color(0xFF667EEA).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Color(0xFF667EEA), size: 20),
+        ),
+        SizedBox(height: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

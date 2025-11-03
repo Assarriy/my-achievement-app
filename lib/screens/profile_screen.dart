@@ -5,8 +5,61 @@ import '../providers/achievement_provider.dart';
 import '../providers/user_provider.dart';
 import 'edit_profile_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> 
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeInOutCubic),
+    ));
+
+    _slideAnimation = Tween<double>(
+      begin: 60.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.1, 0.6, curve: Curves.easeOutCubic),
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.2, 0.9, curve: Curves.elasticOut),
+    ));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,214 +72,345 @@ class ProfileScreen extends StatelessWidget {
     final totalCategories = categories.length;
 
     return Scaffold(
-      backgroundColor: Color(0xFFFAFAFA),
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
+      backgroundColor: Color(0xFF0F172A),
+      body: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return CustomScrollView(
+            physics: BouncingScrollPhysics(),
+            slivers: [
+              // Modern App Bar
+              SliverAppBar(
+                expandedHeight: 240.0,
+                floating: false,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF667EEA),
+                          Color(0xFF764BA2),
+                          Color(0xFFF093FB),
+                        ],
+                        stops: [0.0, 0.6, 1.0],
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Background Pattern
+                        Positioned(
+                          top: -50,
+                          right: -50,
+                          child: Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.1),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        // Profile Content
+                        Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Transform.translate(
+                                offset: Offset(0, _slideAnimation.value),
+                                child: Opacity(
+                                  opacity: _fadeAnimation.value,
+                                  child: Row(
+                                    children: [
+                                      ScaleTransition(
+                                        scale: _scaleAnimation,
+                                        child: Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.2),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(0.3),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: user?.avatarPath != null
+                                              ? ClipOval(
+                                                  child: Image.file(
+                                                    File(user!.avatarPath!),
+                                                    fit: BoxFit.cover,
+                                                    width: 80,
+                                                    height: 80,
+                                                  ),
+                                                )
+                                              : Icon(
+                                                  Icons.person,
+                                                  size: 36,
+                                                  color: Colors.white,
+                                                ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              user?.name ?? 'User',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              user?.email ?? 'email@example.com',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.white.withOpacity(0.8),
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Content
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  Transform.translate(
+                    offset: Offset(0, _slideAnimation.value),
+                    child: Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            children: [
+                              // Stats Section
+                              _buildSectionHeader('Statistics', Icons.analytics),
+                              SizedBox(height: 16),
+                              
+                              // Stats Grid
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildModernStatCard(
+                                      icon: Icons.auto_awesome,
+                                      value: '$totalAchievements',
+                                      label: 'Total',
+                                      index: 0,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildModernStatCard(
+                                      icon: Icons.category,
+                                      value: '$totalCategories',
+                                      label: 'Categories',
+                                      index: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildModernStatCard(
+                                      icon: Icons.calendar_month,
+                                      value: _getAchievementsThisMonth(achievementProvider.achievements),
+                                      label: 'This Month',
+                                      index: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildModernStatCard(
+                                      icon: Icons.trending_up,
+                                      value: _getAveragePerWeek(achievementProvider.achievements),
+                                      label: 'Avg/Week',
+                                      index: 3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 32),
+
+                              // Settings Section
+                              _buildSectionHeader('Settings', Icons.settings),
+                              SizedBox(height: 16),
+
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF1E293B),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Color(0xFF334155),
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 15,
+                                      offset: Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildModernSettingItem(
+                                      icon: Icons.edit,
+                                      title: 'Edit Profile',
+                                      subtitle: 'Update your personal information',
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          PageRouteBuilder(
+                                            pageBuilder: (context, animation, secondaryAnimation) => const EditProfileScreen(),
+                                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                              return SlideTransition(
+                                                position: Tween<Offset>(
+                                                  begin: const Offset(1.0, 0.0),
+                                                  end: Offset.zero,
+                                                ).animate(CurvedAnimation(
+                                                  parent: animation,
+                                                  curve: Curves.easeInOutCubic,
+                                                )),
+                                                child: FadeTransition(
+                                                  opacity: animation,
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                                      height: 1,
+                                      color: Color(0xFF334155),
+                                    ),
+
+                                    _buildModernSettingItem(
+                                      icon: Icons.notifications,
+                                      title: 'Notifications',
+                                      subtitle: 'Manage your notification preferences',
+                                      onTap: () {},
+                                    ),
+
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                                      height: 1,
+                                      color: Color(0xFF334155),
+                                    ),
+
+                                    _buildModernSettingItem(
+                                      icon: Icons.security,
+                                      title: 'Privacy & Security',
+                                      subtitle: 'Control your privacy settings',
+                                      onTap: () {},
+                                    ),
+
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                                      height: 1,
+                                      color: Color(0xFF334155),
+                                    ),
+
+                                    _buildModernSettingItem(
+                                      icon: Icons.help_outline,
+                                      title: 'Help & Support',
+                                      subtitle: 'Get help and contact support',
+                                      onTap: () {},
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: 24),
+
+                              // Additional Info
+                              Container(
+                                padding: EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF1E293B),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Color(0xFF334155),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildInfoItem('Member Since', '2024', Icons.calendar_today),
+                                    _buildInfoItem('Level', 'Pro', Icons.star),
+                                    _buildInfoItem('Status', 'Active', Icons.circle),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: Color(0xFF667EEA), size: 22),
+        SizedBox(width: 12),
+        Text(
+          title,
           style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
             fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
+            letterSpacing: -0.3,
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Color(0xFF1A1A1A),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            // Profile Header
-            Container(
-              width: double.infinity,
-              color: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-              child: Column(
-                children: [
-                  // Avatar with subtle red accent
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF5F5F5),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Color(0xFFFFEBEE),
-                        width: 3,
-                      ),
-                    ),
-                    child: user?.avatarPath != null
-                        ? ClipOval(
-                            child: Image.file(
-                              File(user!.avatarPath!),
-                              fit: BoxFit.cover,
-                              width: 96,
-                              height: 96,
-                            ),
-                          )
-                        : Icon(
-                            Icons.person,
-                            size: 44,
-                            color: Color(0xFFD32F2F),
-                          ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Name
-                  Text(
-                    user?.name ?? 'User',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFF0F0F0),
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  // Email
-                  Text(
-                    user?.email ?? 'email@example.com',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFFF0F0F0),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Stats Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 16),
-                    child: Text(
-                      'Statistics',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-
-                  // Stats Grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildModernStatCard(
-                          icon: Icons.emoji_events_outlined,
-                          value: '$totalAchievements',
-                          label: 'Total',
-                          index: 0,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildModernStatCard(
-                          icon: Icons.category_outlined,
-                          value: '$totalCategories',
-                          label: 'Categories',
-                          index: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildModernStatCard(
-                          icon: Icons.calendar_month_outlined,
-                          value: _getAchievementsThisMonth(achievementProvider.achievements),
-                          label: 'This Month',
-                          index: 2,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildModernStatCard(
-                          icon: Icons.trending_up_outlined,
-                          value: _getAveragePerWeek(achievementProvider.achievements),
-                          label: 'Avg/Week',
-                          index: 3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Settings Section
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 24, bottom: 16),
-                    child: Text(
-                      'Settings',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-
-                  _buildModernSettingItem(
-                    icon: Icons.edit_outlined,
-                    title: 'Edit Profile',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const EditProfileScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    height: 1,
-                    color: Color(0xFFF0F0F0),
-                  ),
-
-                  _buildModernSettingItem(
-                    icon: Icons.notifications_outlined,
-                    title: 'Notifications',
-                    onTap: () {},
-                  ),
-
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    height: 1,
-                    color: Color(0xFFF0F0F0),
-                  ),
-
-                  _buildModernSettingItem(
-                    icon: Icons.security_outlined,
-                    title: 'Privacy',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
@@ -236,61 +420,62 @@ class ProfileScreen extends StatelessWidget {
     required String label,
     required int index,
   }) {
-    final redShades = [
-      Color(0xFFD32F2F), // Primary red
-      Color(0xFFC62828), // Darker red
-      Color(0xFFE53935), // Bright red
-      Color(0xFFEF5350), // Light red
+    final gradientColors = [
+      [Color(0xFF667EEA), Color(0xFF764BA2)],
+      [Color(0xFFF093FB), Color(0xFFF5576C)],
+      [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+      [Color(0xFF43E97B), Color(0xFF38F9D7)],
     ];
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: gradientColors[index],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: gradientColors[index][0].withOpacity(0.4),
+            blurRadius: 15,
+            offset: Offset(0, 8),
           ),
         ],
-        border: Border.all(
-          color: Color(0xFFF0F0F0),
-        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: redShades[index].withOpacity(0.1),
+              color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              size: 20,
-              color: redShades[index],
+              size: 22,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
               height: 1,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF666666),
-              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -301,47 +486,96 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildModernSettingItem({
     required IconData icon,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      splashColor: Color(0xFFFFEBEE),
-      highlightColor: Color(0xFFFFEBEE).withOpacity(0.5),
+      borderRadius: BorderRadius.circular(12),
+      splashColor: Color(0xFF667EEA).withOpacity(0.1),
+      highlightColor: Color(0xFF667EEA).withOpacity(0.05),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Color(0xFFF5F5F5),
+                color: Color(0xFF667EEA).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 18,
-                color: Color(0xFFD32F2F),
+                size: 20,
+                color: Color(0xFF667EEA),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF1A1A1A),
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: Color(0xFF999999),
+              size: 16,
+              color: Color(0xFF64748B),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoItem(String title, String value, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Color(0xFF667EEA).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Color(0xFF667EEA), size: 18),
+        ),
+        SizedBox(height: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 

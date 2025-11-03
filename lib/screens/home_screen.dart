@@ -16,7 +16,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _slideAnimation;
   late Animation<Color?> _colorAnimation;
+  
+  int _currentIndex = 0;
+  final List<String> _categories = ['All', 'Work', 'Personal', 'Education', 'Sports'];
 
   @override
   void initState() {
@@ -24,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _fadeAnimation = Tween<double>(
@@ -32,20 +36,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      curve: const Interval(0.0, 0.8, curve: Curves.easeInOut),
     ));
 
     _scaleAnimation = Tween<double>(
-      begin: 0.8,
+      begin: 0.9,
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+      curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
+    ));
+
+    _slideAnimation = Tween<double>(
+      begin: 100.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.1, 0.7, curve: Curves.easeOutCubic),
     ));
 
     _colorAnimation = ColorTween(
-      begin: Color(0xFFE53935).withOpacity(0.5),
-      end: Color(0xFFE53935),
+      begin: Color(0xFF667EEA).withOpacity(0.5),
+      end: Color(0xFF667EEA),
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -68,244 +80,378 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AchievementProvider>();
+    final achievementCount = provider.achievements.length;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Animated AppBar
-          SliverAppBar(
-            expandedHeight: 200.0,
-            floating: false,
-            pinned: true,
-            snap: false,
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFE53935),
-                      Color(0xFFEF5350),
-                      Color(0xFFFF8A80),
-                    ],
-                    stops: [0.0, 0.6, 1.0],
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Animated Background Elements
-                    Positioned(
-                      top: -50,
-                      right: -30,
-                      child: AnimatedContainer(
-                        duration: Duration(seconds: 3),
-                        curve: Curves.easeInOut,
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
+      backgroundColor: Color(0xFF0F172A),
+      body: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Modern Glassmorphism App Bar
+              SliverAppBar(
+                expandedHeight: 280.0,
+                floating: false,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF667EEA),
+                          Color(0xFF764BA2),
+                          Color(0xFFF093FB),
+                        ],
+                        stops: [0.0, 0.5, 1.0],
                       ),
                     ),
-                    Positioned(
-                      bottom: -20,
-                      left: -20,
-                      child: AnimatedContainer(
-                        duration: Duration(seconds: 3),
-                        curve: Curves.easeInOut,
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
+                    child: Stack(
+                      children: [
+                        // Animated Background Pattern
+                        Positioned(
+                          top: -100,
+                          right: -100,
+                          child: AnimatedContainer(
+                            duration: Duration(seconds: 20),
+                            curve: Curves.linear,
+                            width: 300,
+                            height: 300,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.1),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    // Title with Animation
-                    Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: AnimatedBuilder(
-                          animation: _fadeAnimation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: Offset(0, 20 * (1 - _fadeAnimation.value)),
-                              child: Opacity(
-                                opacity: _fadeAnimation.value,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "My Achievements",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        shadows: [
-                                          Shadow(
-                                            blurRadius: 10,
-                                            color: Colors.black.withOpacity(0.3),
-                                            offset: Offset(2, 2),
+                        
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Transform.translate(
+                                offset: Offset(0, _slideAnimation.value),
+                                child: Opacity(
+                                  opacity: _fadeAnimation.value,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(0.3),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.auto_awesome,
+                                              color: Colors.white,
+                                              size: 32,
+                                            ),
+                                          ),
+                                          SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "My Journey",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 32,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: -0.5,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 4),
+                                                Text(
+                                                  "Track your achievements",
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.8),
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      "${provider.achievements.length} prestasi tercatat",
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w300,
+                                      SizedBox(height: 24),
+                                      Container(
+                                        padding: EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(0.2),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                          children: [
+                                            _buildStatItem("Total", "$achievementCount", Icons.flag),
+                                            _buildStatItem("Completed", "$achievementCount", Icons.check_circle),
+                                            _buildStatItem("In Progress", "0", Icons.timelapse),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            );
-                          },
+                            ],
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  // Profile Button
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      margin: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.person, color: Colors.white),
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/profile');
+                        },
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              // Animated Category Button
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
                   ),
-                  child: IconButton(
-                    icon: const Icon(Icons.category, color: Colors.white),
-                    tooltip: 'Kelola Kategori',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            return SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(1.0, 0.0),
-                                end: Offset.zero,
-                              ).animate(CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOut,
-                              )),
-                              child: child,
-                            );
-                          },
-                        ),
-                      );
-                    },
+                  
+                  // Categories Button
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      margin: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.category, color: Colors.white),
+                        tooltip: 'Kelola Kategori',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                return SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(1.0, 0.0),
+                                    end: Offset.zero,
+                                  ).animate(CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeInOutCubic,
+                                  )),
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              transitionDuration: Duration(milliseconds: 600),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  // Filter Button
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      margin: EdgeInsets.only(right: 8, left: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: PopupMenuButton<SortType>(
+                        icon: Icon(Icons.filter_list, color: Colors.white),
+                        onSelected: (SortType result) {
+                          provider.sortAchievements(result);
+                          _refreshWithAnimation();
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<SortType>>[
+                          PopupMenuItem<SortType>(
+                            value: SortType.byDate,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF667EEA).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.calendar_today, color: Color(0xFF667EEA), size: 20),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'By Date',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<SortType>(
+                            value: SortType.byCategory,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF667EEA).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.category, color: Color(0xFF667EEA), size: 20),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'By Category',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Category Chips
+              SliverToBoxAdapter(
+                child: Transform.translate(
+                  offset: Offset(0, _slideAnimation.value),
+                  child: Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Container(
+                      height: 70,
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _categories.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(
+                                _categories[index],
+                                style: TextStyle(
+                                  color: _currentIndex == index ? Colors.white : Color(0xFF94A3B8),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              selected: _currentIndex == index,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _currentIndex = index;
+                                });
+                              },
+                              backgroundColor: Color(0xFF1E293B),
+                              selectedColor: Color(0xFF667EEA),
+                              shape: StadiumBorder(
+                                side: BorderSide(
+                                  color: _currentIndex == index 
+                                      ? Color(0xFF667EEA) 
+                                      : Color(0xFF334155),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
 
-              // Animated Profile Button
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.person, color: Colors.white),
-                    tooltip: 'Profile',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/profile');
-                    },
-                  ),
-                ),
-              ),
-
-              // Animated Sort Button
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: Container(
-                  margin: EdgeInsets.only(right: 8, left: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: PopupMenuButton<SortType>(
-                    icon: const Icon(Icons.sort, color: Colors.white),
-                    tooltip: 'Urutkan',
-                    onSelected: (SortType result) {
-                      provider.sortAchievements(result);
-                      _refreshWithAnimation();
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<SortType>>[
-                      PopupMenuItem<SortType>(
-                        value: SortType.byDate,
-                        child: Row(
-                          children: [
-                            Icon(Icons.date_range, color: Color(0xFFE53935)),
-                            SizedBox(width: 8),
-                            Text('Urutkan berdasarkan Tanggal'),
-                          ],
-                        ),
+              // Content Area
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFF0F172A),
+                          Color(0xFF1E293B),
+                        ],
                       ),
-                      PopupMenuItem<SortType>(
-                        value: SortType.byCategory,
-                        child: Row(
-                          children: [
-                            Icon(Icons.category, color: Color(0xFFE53935)),
-                            SizedBox(width: 8),
-                            Text('Urutkan berdasarkan Kategori'),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
+                    child: provider.achievements.isEmpty
+                        ? _buildModernEmptyState()
+                        : _buildModernAchievementsList(provider, context),
                   ),
-                ),
+                ]),
               ),
             ],
-          ),
-
-          // Content Area
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white,
-                      Colors.white,
-                      Color(0xFFFFF5F5),
-                    ],
-                  ),
-                ),
-                child: provider.achievements.isEmpty
-                    ? _buildEmptyState()
-                    : _buildAchievementsList(provider, context),
-              ),
-            ]),
-          ),
-        ],
+          );
+        },
       ),
-      floatingActionButton: _buildAnimatedFAB(),
+      floatingActionButton: _buildModernFAB(),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernEmptyState() {
     return AnimatedBuilder(
       animation: _fadeAnimation,
       builder: (context, child) {
@@ -314,88 +460,141 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Transform.scale(
             scale: _scaleAnimation.value,
             child: Container(
-              height: 300,
-              padding: EdgeInsets.all(24),
-              margin: EdgeInsets.all(20),
+              height: 400,
+              padding: EdgeInsets.all(32),
+              margin: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(25),
+                color: Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Color(0xFF334155),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.3),
                     blurRadius: 20,
                     offset: Offset(0, 10),
                   ),
                 ],
-                border: Border.all(
-                  color: Colors.red.withOpacity(0.1),
-                  width: 1,
-                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimatedContainer(
-                    duration: Duration(seconds: 2),
-                    curve: Curves.elasticOut,
+                  Container(
+                    padding: EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF667EEA).withOpacity(0.2),
+                          Color(0xFF764BA2).withOpacity(0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(
+                        color: Color(0xFF334155),
+                        width: 2,
+                      ),
+                    ),
                     child: Icon(
-                      Icons.emoji_events,
-                      size: 80,
-                      color: Color(0xFFE53935).withOpacity(0.3),
+                      Icons.auto_awesome_motion,
+                      size: 64,
+                      color: Color(0xFF667EEA),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  SizedBox(height: 32),
                   Text(
-                    "Belum ada prestasi",
+                    "No Achievements Yet",
                     style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: 12),
                   Text(
-                    "Ayo mulai tambahkan prestasi pertama Anda!",
+                    "Start your journey by adding your first achievement\nand track your progress",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                      fontSize: 16,
+                      color: Color(0xFF94A3B8),
+                      height: 1.5,
                     ),
                   ),
-                  SizedBox(height: 20),
-                  AnimatedContainer(
-                    duration: Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    child: Material(
-                      color: Color(0xFFE53935),
-                      borderRadius: BorderRadius.circular(15),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => AddEditScreen(),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                );
-                              },
+                  SizedBox(height: 32),
+                  AnimatedBuilder(
+                    animation: _colorAnimation,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF667EEA),
+                              Color(0xFF764BA2),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF667EEA).withOpacity(0.4),
+                              blurRadius: 20,
+                              offset: Offset(0, 8),
                             ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(15),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          child: Text(
-                            "Tambah Prestasi",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation, secondaryAnimation) => AddEditScreen(),
+                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(
+                                        scale: Tween<double>(
+                                          begin: 0.8,
+                                          end: 1.0,
+                                        ).animate(CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutBack,
+                                        )),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add, color: Colors.white, size: 24),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    "Start Journey",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -406,60 +605,125 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAchievementsList(AchievementProvider provider, BuildContext context) {
+  Widget _buildModernAchievementsList(AchievementProvider provider, BuildContext context) {
     return AnimatedBuilder(
       animation: _fadeAnimation,
       builder: (context, child) {
         return Opacity(
           opacity: _fadeAnimation.value,
           child: Transform.translate(
-            offset: Offset(0, 30 * (1 - _fadeAnimation.value)),
-            child: ListView.builder(
-              physics: NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              padding: const EdgeInsets.only(bottom: 100, top: 16),
-              itemCount: provider.achievements.length,
-              itemBuilder: (ctx, index) {
-                final achievement = provider.achievements[index];
-                
-                return AnimatedContainer(
-                  duration: Duration(milliseconds: 300 + (index * 100)),
-                  curve: Curves.easeInOut,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: AchievementListItem(
-                    key: ValueKey(achievement.id), 
-                    achievement: achievement,
-                    onDismissed: () {
-                      context.read<AchievementProvider>().deleteAchievement(achievement.id);
+            offset: Offset(0, _slideAnimation.value),
+            child: Column(
+              children: [
+                SizedBox(height: 16),
+                // Recent Achievements Header
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Recent Achievements",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Color(0xFF334155),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "${provider.achievements.length} items",
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+                // Achievements List
+                ListView.builder(
+                  physics: NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16),
+                  itemCount: provider.achievements.length,
+                  itemBuilder: (ctx, index) {
+                    final achievement = provider.achievements[index];
+                    final animationDelay = (index * 150).clamp(0, 1000);
+                    
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 500 + animationDelay),
+                      curve: Curves.easeOutCubic,
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - _fadeAnimation.value)),
+                        child: Opacity(
+                          opacity: _fadeAnimation.value,
+                          child: AchievementListItem(
+                            key: ValueKey(achievement.id), 
+                            achievement: achievement,
+                            onDismissed: () {
+                              context.read<AchievementProvider>().deleteAchievement(achievement.id);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.white),
-                              SizedBox(width: 8),
-                              Expanded(child: Text("${achievement.title} dihapus.")),
-                            ],
-                          ),
-                          duration: const Duration(seconds: 2),
-                          backgroundColor: Color(0xFFE53935),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          action: SnackBarAction(
-                            label: 'Batal',
-                            textColor: Colors.white,
-                            onPressed: () {
-                              // Optional: Add undo functionality
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.check_circle, color: Colors.white),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Achievement Deleted",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            SizedBox(height: 2),
+                                            Text(
+                                              "${achievement.title} has been removed",
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                  backgroundColor: Color(0xFF667EEA),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  action: SnackBarAction(
+                                    label: 'Undo',
+                                    textColor: Colors.white,
+                                    onPressed: () {
+                                      // Optional: Add undo functionality
+                                    },
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         ),
-                      );
-                    },
-                  ),
-                );
-              },
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         );
@@ -467,44 +731,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAnimatedFAB() {
+  Widget _buildModernFAB() {
     return AnimatedBuilder(
       animation: _colorAnimation,
       builder: (context, child) {
         return Container(
-          margin: EdgeInsets.only(bottom: 16),
+          margin: EdgeInsets.only(bottom: 20),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF667EEA),
+                Color(0xFF764BA2),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             boxShadow: [
               BoxShadow(
-                color: _colorAnimation.value!.withOpacity(0.4),
-                blurRadius: 15,
-                offset: Offset(0, 6),
+                color: Color(0xFF667EEA).withOpacity(0.5),
+                blurRadius: 20,
+                offset: Offset(0, 8),
+                spreadRadius: 2,
               ),
             ],
           ),
           child: FloatingActionButton(
-            backgroundColor: _colorAnimation.value,
-            foregroundColor: Colors.white,
-            onPressed: () {
-              Navigator.of(context).push(
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) => AddEditScreen(),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    var begin = Offset(0.0, 1.0);
-                    var end = Offset.zero;
-                    var curve = Curves.easeInOut;
-                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-                    return SlideTransition(
-                      position: animation.drive(tween),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
-            elevation: 0,
             child: AnimatedContainer(
               duration: Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -514,6 +766,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: Colors.white,
               ),
             ),
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            onPressed: () {
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => AddEditScreen(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return ScaleTransition(
+                      scale: Tween<double>(
+                        begin: 0.0,
+                        end: 1.0,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutBack,
+                      )),
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            elevation: 0,
           ),
         );
       },

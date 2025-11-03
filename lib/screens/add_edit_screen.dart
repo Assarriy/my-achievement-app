@@ -32,21 +32,23 @@ class _AddEditScreenState extends State<AddEditScreen>
 
   bool _isEditMode = false;
   bool _isLoading = false;
+  bool _isImageHovered = false;
 
-  // Animations
+  // Enhanced Animations
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
+  late Animation<double> _scaleAnimation;
   late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize animations
+    // Initialize enhanced animations
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _fadeAnimation = Tween<double>(
@@ -54,23 +56,31 @@ class _AddEditScreenState extends State<AddEditScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      curve: const Interval(0.0, 0.8, curve: Curves.easeInOutQuart),
     ));
 
     _slideAnimation = Tween<double>(
-      begin: 30.0,
+      begin: 60.0,
       end: 0.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
+      curve: const Interval(0.1, 0.7, curve: Curves.easeOutCubic),
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.2, 0.9, curve: Curves.elasticOut),
     ));
 
     _colorAnimation = ColorTween(
-      begin: Color(0xFFE53935).withOpacity(0.5),
-      end: Color(0xFFE53935),
+      begin: Color(0xFF667EEA).withOpacity(0.3),
+      end: Color(0xFF667EEA),
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut,
+      curve: Curves.easeInOutCubic,
     ));
 
     _animationController.forward();
@@ -106,13 +116,24 @@ class _AddEditScreenState extends State<AddEditScreen>
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Color(0xFFE53935),
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: Color(0xFF667EEA),
               onPrimary: Colors.white,
+              surface: Color(0xFF1E293B),
+              onSurface: Colors.white,
+              background: Color(0xFF0F172A),
             ),
+            dialogBackgroundColor: Color(0xFF1E293B),
+            cardColor: Color(0xFF1E293B),
           ),
-          child: child!,
+          child: Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: Color(0xFF1E293B),
+            child: child!,
+          ),
         );
       },
     );
@@ -136,19 +157,10 @@ class _AddEditScreenState extends State<AddEditScreen>
     final isValid = _formKey.currentState?.validate() ?? false;
 
     if (_selectedCategoryName == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.warning, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Silakan pilih satu kategori.'),
-            ],
-          ),
-          backgroundColor: Color(0xFFE53935),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        ),
+      _showSnackBar(
+        'Please select a category',
+        Icons.category,
+        Color(0xFF667EEA),
       );
       return;
     }
@@ -189,21 +201,31 @@ class _AddEditScreenState extends State<AddEditScreen>
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Gagal menyimpan: $error'),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        ),
+      _showSnackBar(
+        'Failed to save: $error',
+        Icons.error,
+        Colors.red,
       );
     }
+  }
+
+  void _showSnackBar(String message, IconData icon, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   Widget _buildCategoryChips() {
@@ -211,559 +233,796 @@ class _AddEditScreenState extends State<AddEditScreen>
 
     if (categories.isEmpty) {
       return AnimatedContainer(
-        duration: Duration(milliseconds: 300),
-        padding: EdgeInsets.all(16),
+        duration: Duration(milliseconds: 500),
+        padding: EdgeInsets.all(24),
         margin: EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: Color(0xFFFFF5F5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Color(0xFFE53935).withOpacity(0.2)),
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF1E293B),
+              Color(0xFF334155).withOpacity(0.3),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Color(0xFF667EEA).withOpacity(0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 15,
+              offset: Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Icon(Icons.category, color: Color(0xFFE53935).withOpacity(0.5), size: 40),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFF667EEA).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.category, 
+                color: Color(0xFF667EEA), 
+                size: 40,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No Categories Available',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
             SizedBox(height: 8),
             Text(
-              'Tidak ada kategori.\nSilakan tambahkan di halaman "Kelola".',
+              'Add categories to organize your achievements',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(height: 20),
+            // Enhanced Manage Categories Button
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF667EEA),
+                    Color(0xFF764BA2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF667EEA).withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOutCubic,
+                            )),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        transitionDuration: Duration(milliseconds: 600),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.settings, color: Colors.white, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Manage Categories',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
       );
     }
 
-    return Wrap(
-      spacing: 8.0,
-      runSpacing: 8.0,
-      children: categories.map((category) {
-        final isSelected = _selectedCategoryName == category.name;
-        return AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          child: FilterChip(
-            label: Text(
-              category.name,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Color(0xFFE53935),
-                fontWeight: FontWeight.w500,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 12.0,
+          runSpacing: 12.0,
+          children: categories.asMap().entries.map((entry) {
+            final index = entry.key;
+            final category = entry.value;
+            final isSelected = _selectedCategoryName == category.name;
+            
+            return AnimatedContainer(
+              duration: Duration(milliseconds: 400 + (index * 100)),
+              curve: Curves.easeOutCubic,
+              child: FilterChip(
+                label: Text(
+                  category.name,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                    fontSize: isSelected ? 14 : 13,
+                  ),
+                ),
+                selected: isSelected,
+                backgroundColor: Color(0xFF334155),
+                selectedColor: Color(0xFF667EEA),
+                checkmarkColor: Colors.white,
+                onSelected: (isSelected) {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedCategoryName = category.name;
+                    }
+                  });
+                },
+                elevation: isSelected ? 6 : 2,
+                shadowColor: Color(0xFF667EEA).withOpacity(isSelected ? 0.4 : 0.1),
+                shape: StadiumBorder(
+                  side: BorderSide(
+                    color: isSelected ? Color(0xFF667EEA) : Color(0xFF475569),
+                    width: isSelected ? 2 : 1.5,
+                  ),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                avatar: isSelected ? Icon(Icons.check, size: 18, color: Colors.white) : null,
               ),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 16),
+        // Manage Categories Button (Always Visible)
+        Align(
+          alignment: Alignment.centerRight,
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Color(0xFF475569), width: 1.5),
+              color: Color(0xFF1E293B),
             ),
-            selected: isSelected,
-            backgroundColor: Colors.white,
-            selectedColor: Color(0xFFE53935),
-            checkmarkColor: Colors.white,
-            onSelected: (isSelected) {
-              setState(() {
-                if (isSelected) {
-                  _selectedCategoryName = category.name;
-                }
-              });
-            },
-            elevation: isSelected ? 4 : 0,
-            shadowColor: Color(0xFFE53935).withOpacity(0.3),
-            shape: StadiumBorder(
-              side: BorderSide(
-                color: isSelected ? Color(0xFFE53935) : Colors.grey[300]!,
-                width: 1.5,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(1.0, 0.0),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOutCubic,
+                          )),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      transitionDuration: Duration(milliseconds: 600),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.settings, color: Color(0xFF667EEA), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Manage Categories',
+                        style: TextStyle(
+                          color: Color(0xFF667EEA),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 
   Widget _buildImagePreview() {
-    Widget imagePreview = Container(
-      width: 150,
-      height: 150,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border.all(width: 2, color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.photo_camera, size: 40, color: Colors.grey[400]),
-          SizedBox(height: 8),
-          Text('Belum ada foto', 
-            style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+    Widget imageContent;
 
-    if (_pickedImageFile != null) {
-      imagePreview = ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+    if (_pickedImageFile != null || _existingImagePath != null) {
+      final imageFile = _pickedImageFile ?? File(_existingImagePath!);
+      imageContent = ClipRRect(
+        borderRadius: BorderRadius.circular(20),
         child: Image.file(
-          _pickedImageFile!,
+          imageFile,
           fit: BoxFit.cover,
-          width: 150,
-          height: 150,
+          width: 180,
+          height: 180,
         ),
       );
-    } else if (_existingImagePath != null) {
-      imagePreview = ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Image.file(
-          File(_existingImagePath!),
-          fit: BoxFit.cover,
-          width: 150,
-          height: 150,
-        ),
+    } else {
+      imageContent = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.photo_camera, size: 50, color: Color(0xFF64748B)),
+          SizedBox(height: 12),
+          Text('No Image', 
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+          ),
+          SizedBox(height: 4),
+          Text('Tap to select',
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
+        ],
       );
     }
 
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFFE53935).withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isImageHovered = true),
+      onExit: (_) => setState(() => _isImageHovered = false),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        width: 180,
+        height: 180,
+        decoration: BoxDecoration(
+          color: Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _isImageHovered ? Color(0xFF667EEA) : Color(0xFF334155),
+            width: _isImageHovered ? 3 : 2,
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isImageHovered ? 0.5 : 0.3),
+              blurRadius: _isImageHovered ? 25 : 15,
+              offset: Offset(0, _isImageHovered ? 10 : 5),
+              spreadRadius: _isImageHovered ? 2 : 0,
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            onTap: _pickImage,
+            borderRadius: BorderRadius.circular(20),
+            splashColor: Color(0xFF667EEA).withOpacity(0.3),
+            highlightColor: Color(0xFF667EEA).withOpacity(0.1),
+            child: Stack(
+              children: [
+                Center(child: imageContent),
+                if (_isImageHovered)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Color(0xFF667EEA).withOpacity(0.1),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFF667EEA).withOpacity(0.05),
+                            Color(0xFF667EEA).withOpacity(0.15),
+                          ],
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: Color(0xFF667EEA),
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
-      child: imagePreview,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: AnimatedBuilder(
-          animation: _fadeAnimation,
-          builder: (context, child) {
-            return Opacity(
-              opacity: _fadeAnimation.value,
-              child: Text(
-                _isEditMode ? 'Edit Prestasi' : 'Tambah Prestasi',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            );
-          },
-        ),
-        backgroundColor: Color(0xFFE53935),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFE53935),
-                Color(0xFFEF5350),
-                Color(0xFFFF8A80),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          if (_isLoading)
-            Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 2,
-                ),
-              ),
-            )
-          else
-            AnimatedBuilder(
-              animation: _colorAnimation,
-              builder: (context, child) {
-                return IconButton(
-                  icon: Icon(Icons.save, color: Colors.white),
-                  onPressed: _saveForm,
-                  tooltip: 'Simpan',
-                );
-              },
-            ),
-        ],
-      ),
+      backgroundColor: Color(0xFF0F172A),
       body: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _slideAnimation.value),
-            child: Opacity(
-              opacity: _fadeAnimation.value,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFE53935).withOpacity(0.03),
-                      Colors.white,
-                      Colors.white,
-                    ],
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  physics: BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Image Section
-                          Center(
-                            child: Column(
-                              children: [
-                                _buildImagePreview(),
-                                SizedBox(height: 16),
-                                AnimatedContainer(
-                                  duration: Duration(milliseconds: 300),
-                                  child: Material(
-                                    color: Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: InkWell(
-                                      onTap: _pickImage,
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 12,
+          return CustomScrollView(
+            physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            slivers: [
+              // Enhanced Modern App Bar
+              SliverAppBar(
+                expandedHeight: 200.0,
+                floating: false,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF667EEA),
+                          Color(0xFF764BA2),
+                          Color(0xFFF093FB),
+                        ],
+                        stops: [0.0, 0.6, 1.0],
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Animated Background Elements
+                        Positioned(
+                          top: -60,
+                          right: -60,
+                          child: AnimatedContainer(
+                            duration: Duration(seconds: 20),
+                            curve: Curves.linear,
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.15),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Transform.translate(
+                                offset: Offset(0, _slideAnimation.value),
+                                child: Opacity(
+                                  opacity: _fadeAnimation.value,
+                                  child: Row(
+                                    children: [
+                                      ScaleTransition(
+                                        scale: _scaleAnimation,
+                                        child: Container(
+                                          padding: EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(0.3),
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            _isEditMode ? Icons.edit : Icons.add,
+                                            color: Colors.white,
+                                            size: 32,
+                                          ),
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                      ),
+                                      SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Icon(Icons.camera_alt, 
-                                              color: Colors.white, size: 20),
-                                            SizedBox(width: 8),
-                                            Text('Pilih Foto', 
+                                            Text(
+                                              _isEditMode ? "Edit Achievement" : "New Achievement",
                                               style: TextStyle(
                                                 color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                              )),
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              _isEditMode 
+                                                  ? "Update your achievement details"
+                                                  : "Create a new achievement",
+                                              style: TextStyle(
+                                                color: Colors.white.withOpacity(0.8),
+                                                fontSize: 14,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 32),
-
-                          // Title Input
-                          Text(
-                            'Judul Prestasi',
-                            style: TextStyle(
-                              color: Color(0xFFE53935),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: TextFormField(
-                              controller: _titleController,
-                              decoration: InputDecoration(
-                                hintText: 'Masukkan judul prestasi...',
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey[300]!,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Color(0xFFE53935),
-                                    width: 2,
-                                  ),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                              textInputAction: TextInputAction.next,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Judul tidak boleh kosong';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          SizedBox(height: 24),
-
-                          // Category Section
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Kategori',
-                                style: TextStyle(
-                                  color: Color(0xFFE53935),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              AnimatedContainer(
-                                duration: Duration(milliseconds: 300),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        PageRouteBuilder(
-                                          pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
-                                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                            return SlideTransition(
-                                              position: Tween<Offset>(
-                                                begin: const Offset(1.0, 0.0),
-                                                end: Offset.zero,
-                                              ).animate(CurvedAnimation(
-                                                parent: animation,
-                                                curve: Curves.easeInOut,
-                                              )),
-                                              child: child,
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.settings, 
-                                            color: Color(0xFFE53935), size: 16),
-                                          SizedBox(width: 4),
-                                          Text('Kelola',
-                                            style: TextStyle(
-                                              color: Color(0xFFE53935),
-                                              fontWeight: FontWeight.w600,
-                                            )),
-                                        ],
-                                      ),
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          SizedBox(height: 12),
-                          _buildCategoryChips(),
-                          SizedBox(height: 24),
-
-                          // Date Section
-                          Text(
-                            'Tanggal Prestasi',
-                            style: TextStyle(
-                              color: Color(0xFFE53935),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              leading: Icon(Icons.calendar_today, 
-                                color: Color(0xFFE53935)),
-                              title: Text(
-                                DateFormat('d MMMM yyyy').format(_selectedDate),
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              trailing: Material(
-                                color: Color(0xFFE53935),
-                                borderRadius: BorderRadius.circular(8),
-                                child: InkWell(
-                                  onTap: _presentDatePicker,
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    child: Text(
-                                      'Pilih Tanggal',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              tileColor: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 24),
-
-                          // Description Input
-                          Text(
-                            'Deskripsi',
-                            style: TextStyle(
-                              color: Color(0xFFE53935),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: TextFormField(
-                              controller: _descController,
-                              decoration: InputDecoration(
-                                hintText: 'Ceritakan tentang prestasi Anda...',
-                                alignLabelWithHint: true,
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey[300]!,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Color(0xFFE53935),
-                                    width: 2,
-                                  ),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 16,
-                                ),
-                              ),
-                              maxLines: 4,
-                              keyboardType: TextInputType.multiline,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Deskripsi tidak boleh kosong';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          SizedBox(height: 40),
-
-                          // Save Button
-                          AnimatedBuilder(
-                            animation: _colorAnimation,
-                            builder: (context, child) {
-                              return Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _colorAnimation.value!.withOpacity(0.3),
-                                      blurRadius: 15,
-                                      offset: Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: _colorAnimation.value,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: InkWell(
-                                    onTap: _saveForm,
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(vertical: 16),
-                                      child: Center(
-                                        child: _isLoading
-                                            ? SizedBox(
-                                                height: 20,
-                                                width: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                ),
-                                              )
-                                            : Text(
-                                                _isEditMode ? 'UPDATE PRESTASI' : 'SIMPAN PRESTASI',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                  letterSpacing: 1.2,
-                                                ),
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  if (_isLoading)
+                    Padding(
+                      padding: EdgeInsets.only(right: 16.0),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    )
+                  else
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: IconButton(
+                        icon: Icon(Icons.save, color: Colors.white),
+                        onPressed: _saveForm,
+                        tooltip: 'Save',
                       ),
                     ),
+                ],
+              ),
+
+              // Form Content
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  Transform.translate(
+                    offset: Offset(0, _slideAnimation.value),
+                    child: Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0xFF0F172A),
+                                Color(0xFF1E293B),
+                              ],
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Image Section
+                                  Center(child: _buildImagePreview()),
+                                  SizedBox(height: 32),
+
+                                  // Title Input
+                                  _buildFormField(
+                                    label: 'Achievement Title',
+                                    hint: 'Enter your achievement title...',
+                                    controller: _titleController,
+                                    icon: Icons.title,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Title is required';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: 24),
+
+                                  // Category Section
+                                  _buildSectionHeader('Category', Icons.category),
+                                  SizedBox(height: 16),
+                                  _buildCategoryChips(),
+                                  SizedBox(height: 24),
+
+                                  // Date Section
+                                  _buildSectionHeader('Achievement Date', Icons.calendar_today),
+                                  SizedBox(height: 12),
+                                  _buildDatePicker(),
+                                  SizedBox(height: 24),
+
+                                  // Description Input
+                                  _buildFormField(
+                                    label: 'Description',
+                                    hint: 'Tell us about your achievement...',
+                                    controller: _descController,
+                                    icon: Icons.description,
+                                    maxLines: 4,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Description is required';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: 40),
+
+                                  // Save Button
+                                  AnimatedBuilder(
+                                    animation: _colorAnimation,
+                                    builder: (context, child) {
+                                      return Container(
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16),
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Color(0xFF667EEA),
+                                              Color(0xFF764BA2),
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: _colorAnimation.value!.withOpacity(0.5),
+                                              blurRadius: 25,
+                                              offset: Offset(0, 10),
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: _saveForm,
+                                            borderRadius: BorderRadius.circular(16),
+                                            splashColor: Colors.white.withOpacity(0.2),
+                                            highlightColor: Colors.white.withOpacity(0.1),
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(vertical: 18),
+                                              child: Center(
+                                                child: _isLoading
+                                                    ? SizedBox(
+                                                        height: 24,
+                                                        width: 24,
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 3,
+                                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                        ),
+                                                      )
+                                                    : Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: [
+                                                          Icon(Icons.save, color: Colors.white, size: 20),
+                                                          SizedBox(width: 12),
+                                                          Text(
+                                                            _isEditMode ? 'UPDATE ACHIEVEMENT' : 'CREATE ACHIEVEMENT',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 16,
+                                                              letterSpacing: 1.2,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  SizedBox(height: 20),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: Color(0xFF667EEA), size: 22),
+        SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: -0.3,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData icon,
+    required String? Function(String?) validator,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 15,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: controller,
+            style: TextStyle(color: Colors.white, fontSize: 16),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 15),
+              filled: true,
+              fillColor: Color(0xFF1E293B),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Color(0xFF667EEA),
+                  width: 2,
+                ),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              prefixIcon: Icon(icon, color: Color(0xFF667EEA), size: 22),
+            ),
+            maxLines: maxLines,
+            textInputAction: TextInputAction.next,
+            validator: validator,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePicker() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 15,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        leading: Container(
+          padding: EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Color(0xFF667EEA).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.calendar_today, color: Color(0xFF667EEA), size: 22),
+        ),
+        title: Text(
+          DateFormat('d MMMM yyyy').format(_selectedDate),
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        trailing: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF667EEA),
+                Color(0xFF764BA2),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFF667EEA).withOpacity(0.4),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _presentDatePicker,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Text(
+                  'Select Date',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
               ),
             ),
-          );
-        },
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        tileColor: Color(0xFF1E293B),
       ),
     );
   }
