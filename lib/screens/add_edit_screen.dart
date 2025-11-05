@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -26,7 +27,7 @@ class _AddEditScreenState extends State<AddEditScreen>
   late TextEditingController _descController;
 
   DateTime _selectedDate = DateTime.now();
-  File? _pickedImageFile;
+  Uint8List? _selectedImageBytes; // Ganti File dengan Uint8List
   String? _existingImagePath;
   String? _selectedCategoryName;
 
@@ -145,10 +146,10 @@ class _AddEditScreenState extends State<AddEditScreen>
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await _imageService.pickImage();
-    if (pickedFile != null) {
+    final imageBytes = await _imageService.pickImage();
+    if (imageBytes != null) {
       setState(() {
-        _pickedImageFile = pickedFile;
+        _selectedImageBytes = imageBytes;
       });
     }
   }
@@ -182,7 +183,9 @@ class _AddEditScreenState extends State<AddEditScreen>
           date: _selectedDate,
           category: _selectedCategoryName!,
           description: _descController.text,
-          newImageFile: _pickedImageFile,
+          newImageBytes: _selectedImageBytes, // Untuk web
+          newImageFile: _selectedImageBytes != null ? 
+              _convertBytesToFile(_selectedImageBytes!) : null, // Untuk mobile
         );
       } else {
         await provider.addAchievement(
@@ -190,7 +193,9 @@ class _AddEditScreenState extends State<AddEditScreen>
           date: _selectedDate,
           category: _selectedCategoryName!,
           description: _descController.text,
-          tempImage: _pickedImageFile,
+          imageBytes: _selectedImageBytes, // Untuk web
+          tempImage: _selectedImageBytes != null ? 
+              _convertBytesToFile(_selectedImageBytes!) : null, // Untuk mobile
         );
       }
 
@@ -207,6 +212,13 @@ class _AddEditScreenState extends State<AddEditScreen>
         Colors.red,
       );
     }
+  }
+
+  // Helper untuk convert bytes ke file (hanya untuk mobile)
+  File _convertBytesToFile(Uint8List bytes) {
+    // Ini adalah workaround untuk mobile
+    // Di production, Anda mungkin perlu implementasi yang lebih robust
+    return File.fromRawPath(bytes);
   }
 
   void _showSnackBar(String message, IconData icon, Color color) {
@@ -475,18 +487,55 @@ class _AddEditScreenState extends State<AddEditScreen>
   Widget _buildImagePreview() {
     Widget imageContent;
 
-    if (_pickedImageFile != null || _existingImagePath != null) {
-      final imageFile = _pickedImageFile ?? File(_existingImagePath!);
+    if (_selectedImageBytes != null) {
+      // Gambar yang baru dipilih
       imageContent = ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Image.file(
-          imageFile,
+        child: Image.memory(
+          _selectedImageBytes!,
           fit: BoxFit.cover,
           width: 180,
           height: 180,
         ),
       );
+    } else if (_existingImagePath != null && _existingImagePath!.isNotEmpty) {
+      // Gambar yang sudah ada di database
+      if (_existingImagePath!.startsWith('assets/')) {
+        // Gambar dari assets
+        imageContent = ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset(
+            _existingImagePath!,
+            fit: BoxFit.cover,
+            width: 180,
+            height: 180,
+          ),
+        );
+      } else if (_existingImagePath!.startsWith('data:image')) {
+        // Data URL (web)
+        imageContent = ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.network(
+            _existingImagePath!,
+            fit: BoxFit.cover,
+            width: 180,
+            height: 180,
+          ),
+        );
+      } else {
+        // Local file path (hanya untuk mobile/desktop)
+        imageContent = ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.file(
+            File(_existingImagePath!),
+            fit: BoxFit.cover,
+            width: 180,
+            height: 180,
+          ),
+        );
+      }
     } else {
+      // Placeholder
       imageContent = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

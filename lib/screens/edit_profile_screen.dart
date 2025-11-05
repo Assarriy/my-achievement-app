@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../providers/user_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -11,13 +13,16 @@ class EditProfileScreen extends StatefulWidget {
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> 
+class _EditProfileScreenState extends State<EditProfileScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  File? _selectedImage;
+  
+  // Hapus File? _selectedImage dan ganti dengan:
+  Uint8List? _selectedImageBytes;
+  
   bool _emailNotifications = true;
   bool _pushNotifications = false;
 
@@ -29,35 +34,32 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeInOutCubic),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeInOutCubic),
+      ),
+    );
 
-    _slideAnimation = Tween<double>(
-      begin: 60.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.1, 0.6, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation = Tween<double>(begin: 60.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.1, 0.6, curve: Curves.easeOutCubic),
+      ),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.95,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.9, curve: Curves.elasticOut),
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.9, curve: Curves.elasticOut),
+      ),
+    );
 
     _animationController.forward();
 
@@ -66,8 +68,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     if (user != null) {
       _nameController.text = user.name;
       _emailController.text = user.email;
-      _emailNotifications = user.emailNotifications;
-      _pushNotifications = user.pushNotifications;
+      _emailNotifications = user.emailNotifications ?? true;
+      _pushNotifications = user.pushNotifications ?? false;
     }
   }
 
@@ -81,10 +83,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   Future<void> _pickImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
+      
       if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImageBytes = bytes;
         });
       }
     } catch (e) {
@@ -99,22 +108,136 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
+  }
+
+  // Helper method untuk menampilkan gambar
+  Widget _buildImageWidget() {
+    final userProvider = context.read<UserProvider>();
+    final user = userProvider.currentUser;
+
+    // Prioritas 1: Gambar yang baru dipilih (belum disimpan)
+    if (_selectedImageBytes != null) {
+      return ClipOval(
+        child: Image.memory(
+          _selectedImageBytes!,
+          fit: BoxFit.cover,
+          width: 120,
+          height: 120,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultAvatar();
+          },
+        ),
+      );
+    }
+
+    // Prioritas 2: Gambar user yang sudah tersimpan
+    if (user?.avatarPath != null && user!.avatarPath!.isNotEmpty) {
+      if (user.avatarPath!.startsWith('assets/')) {
+        // Gunakan Image.asset untuk gambar dari assets
+        return ClipOval(
+          child: Image.asset(
+            user.avatarPath!,
+            fit: BoxFit.cover,
+            width: 120,
+            height: 120,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultAvatar();
+            },
+          ),
+        );
+      } else if (user.avatarPath!.startsWith('data:image')) {
+        // Untuk web - data URL
+        return ClipOval(
+          child: Image.network(
+            user.avatarPath!,
+            fit: BoxFit.cover,
+            width: 120,
+            height: 120,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultAvatar();
+            },
+          ),
+        );
+      } else if (user.avatarPath!.startsWith('http')) {
+        // Untuk URL external
+        return ClipOval(
+          child: Image.network(
+            user.avatarPath!,
+            fit: BoxFit.cover,
+            width: 120,
+            height: 120,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultAvatar();
+            },
+          ),
+        );
+      } else {
+        // Untuk local file path (mobile/desktop) - hanya jika bukan web
+        if (!kIsWeb) {
+          return ClipOval(
+            child: Image.file(
+              File(user.avatarPath!),
+              fit: BoxFit.cover,
+              width: 120,
+              height: 120,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildDefaultAvatar();
+              },
+            ),
+          );
+        } else {
+          return _buildDefaultAvatar();
+        }
+      }
+    }
+
+    // Fallback: Default avatar dari assets
+    return _buildDefaultAvatar();
+  }
+
+  Widget _buildDefaultAvatar() {
+    return ClipOval(
+      child: Image.asset(
+        'assets/images/avatars/default_avatar.jpeg',
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Color(0xFF1E293B),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person,
+              size: 50,
+              color: Color(0xFF64748B),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       try {
         final userProvider = context.read<UserProvider>();
+
         await userProvider.updateUser(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           emailNotifications: _emailNotifications,
           pushNotifications: _pushNotifications,
-          newAvatarFile: _selectedImage,
+          newAvatarBytes: _selectedImageBytes,
         );
 
         if (mounted) {
@@ -129,7 +252,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               ),
               backgroundColor: Color(0xFF667EEA),
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
           Navigator.of(context).pop();
@@ -147,12 +272,21 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               ),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
       }
     }
+  }
+
+  void _resetToDefaultAvatar() {
+    setState(() {
+      _selectedImageBytes = null;
+    });
+    context.read<UserProvider>().resetToDefaultAvatar();
   }
 
   @override
@@ -209,7 +343,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                             ),
                           ),
                         ),
-                        
+
                         // Content
                         Padding(
                           padding: const EdgeInsets.all(24.0),
@@ -333,29 +467,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                                 ),
                                               ],
                                             ),
-                                            child: _selectedImage != null
-                                                ? ClipOval(
-                                                    child: Image.file(
-                                                      _selectedImage!,
-                                                      fit: BoxFit.cover,
-                                                      width: 120,
-                                                      height: 120,
-                                                    ),
-                                                  )
-                                                : user?.avatarPath != null
-                                                    ? ClipOval(
-                                                        child: Image.file(
-                                                          File(user!.avatarPath!),
-                                                          fit: BoxFit.cover,
-                                                          width: 120,
-                                                          height: 120,
-                                                        ),
-                                                      )
-                                                    : Icon(
-                                                        Icons.person,
-                                                        size: 50,
-                                                        color: Color(0xFF64748B),
-                                                      ),
+                                            child: _buildImageWidget(),
                                           ),
                                           Positioned(
                                             bottom: 0,
@@ -390,6 +502,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                         ],
                                       ),
                                       SizedBox(height: 16),
+                                      
+                                      // Change Photo Button
                                       Container(
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(12),
@@ -403,7 +517,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                             onTap: _pickImage,
                                             borderRadius: BorderRadius.circular(12),
                                             child: Container(
-                                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 10,
+                                              ),
                                               child: Text(
                                                 'Change Photo',
                                                 style: TextStyle(
@@ -413,6 +530,23 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                                 ),
                                               ),
                                             ),
+                                          ),
+                                        ),
+                                      ),
+                                      
+                                      SizedBox(height: 8),
+                                      
+                                      // Reset to Default Avatar Button
+                                      TextButton(
+                                        onPressed: _resetToDefaultAvatar,
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        ),
+                                        child: Text(
+                                          'Use Default Avatar',
+                                          style: TextStyle(
+                                            color: Color(0xFF94A3B8),
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ),
@@ -634,10 +768,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Color(0xFF667EEA),
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: Color(0xFF667EEA), width: 2),
               ),
               contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               prefixIcon: Icon(icon, color: Color(0xFF667EEA), size: 22),
@@ -672,10 +803,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
               ),
             ],
           ),

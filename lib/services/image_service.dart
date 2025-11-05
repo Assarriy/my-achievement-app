@@ -1,53 +1,105 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path; // Tambahkan 'as path'
+import 'package:path/path.dart' as path;
 
 class ImageService {
   final ImagePicker _picker = ImagePicker();
 
+  // Default avatar path untuk assets
+  static const String defaultAvatarPath = 'assets/images/avatars/default_avatar.png';
+  static const String defaultAchievementImage = 'assets/images/achievements/default_achievement.png';
+
   // 1. Ambil gambar dari galeri/kamera
-  Future<File?> pickImage() async {
-    if (kIsWeb) {
-      // Untuk web, gunakan image picker web
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+  Future<Uint8List?> pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
       if (pickedFile != null) {
-        return File(pickedFile.path);
+        final bytes = await pickedFile.readAsBytes();
+        return bytes;
       }
       return null;
-    } else {
-      // Untuk mobile/desktop
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        return File(pickedFile.path);
-      }
+    } catch (e) {
+      print('Error picking image: $e');
       return null;
     }
   }
 
-  // 2. Simpan gambar ke direktori permanen aplikasi
-  Future<String?> saveImagePermanently(File tempImage, String achievementId) async {
-    if (kIsWeb) {
-      // Untuk web, simpan sebagai base64 di localStorage atau gunakan blob
-      // Namun, untuk kesederhanaan, kita bisa menyimpan path sementara atau menggunakan localStorage untuk metadata
-      // Karena web tidak memiliki file system permanen seperti mobile, kita bisa return path asli atau null
-      // Untuk demo, kita return path asli (akan hilang saat refresh)
-      return tempImage.path;
-    } else {
-      // Untuk mobile/desktop
-      final directory = await getApplicationDocumentsDirectory();
-      final String fileExtension = path.extension(tempImage.path);
-      final String newPath = path.join(directory.path, 'ach_$achievementId$fileExtension');
-      final File newImage = await tempImage.copy(newPath);
-      return newImage.path;
+  // 2. Simpan gambar ke local storage (untuk mobile) atau sebagai base64 (untuk web)
+  Future<String?> saveImage(Uint8List imageBytes, String fileName) async {
+    try {
+      if (kIsWeb) {
+        // Untuk web, simpan sebagai base64 string
+        final base64String = base64.encode(imageBytes);
+        return 'data:image/jpeg;base64,$base64String';
+      } else {
+        // Untuk mobile/desktop, simpan ke local storage
+        final directory = await getApplicationDocumentsDirectory();
+        final String fileExtension = '.jpg';
+        final String newPath = path.join(directory.path, fileName + fileExtension);
+        final File file = File(newPath);
+        await file.writeAsBytes(imageBytes);
+        return newPath;
+      }
+    } catch (e) {
+      print('Error saving image: $e');
+      return null;
     }
   }
 
-  // 3. Hapus gambar saat achievement dihapus
+  // 3. Simpan gambar dari bytes (khusus web)
+  Future<String?> saveImageFromBytes(Uint8List bytes, String fileName) async {
+    try {
+      if (kIsWeb) {
+        final base64String = base64.encode(bytes);
+        return 'data:image/jpeg;base64,$base64String';
+      } else {
+        final directory = await getApplicationDocumentsDirectory();
+        final String newPath = path.join(directory.path, fileName);
+        final File file = File(newPath);
+        await file.writeAsBytes(bytes);
+        return newPath;
+      }
+    } catch (e) {
+      print('Error saving image from bytes: $e');
+      return null;
+    }
+  }
+
+  // 4. Simpan gambar permanen (untuk mobile/desktop)
+  Future<String?> saveImagePermanently(File tempImage, String itemId) async {
+    try {
+      if (kIsWeb) {
+        // Untuk web, convert file ke bytes lalu simpan sebagai base64
+        final bytes = await tempImage.readAsBytes();
+        final base64String = base64.encode(bytes);
+        return 'data:image/jpeg;base64,$base64String';
+      } else {
+        // Untuk mobile/desktop
+        final directory = await getApplicationDocumentsDirectory();
+        final String fileExtension = path.extension(tempImage.path);
+        final String newPath = path.join(directory.path, 'item_$itemId$fileExtension');
+        final File newImage = await tempImage.copy(newPath);
+        return newImage.path;
+      }
+    } catch (e) {
+      print('Error saving image permanently: $e');
+      return null;
+    }
+  }
+
+  // 5. Hapus gambar
   Future<void> deleteImage(String imagePath) async {
     if (kIsWeb) {
-      // Untuk web, gambar mungkin tidak permanen, jadi tidak perlu hapus
+      // Untuk web, gambar disimpan sebagai base64 di storage, tidak perlu hapus file
       return;
     } else {
       try {
@@ -59,5 +111,42 @@ class ImageService {
         print("Error deleting image: $e");
       }
     }
+  }
+
+  // 6. Load image sebagai bytes
+  Future<Uint8List?> loadImageBytes(String imagePath) async {
+    try {
+      if (kIsWeb) {
+        if (imagePath.startsWith('data:image')) {
+          final base64String = imagePath.replaceFirst(RegExp(r'data:image/[^;]+;base64,'), '');
+          return base64.decode(base64String);
+        }
+        return null;
+      } else {
+        final file = File(imagePath);
+        if (await file.exists()) {
+          return await file.readAsBytes();
+        }
+        return null;
+      }
+    } catch (e) {
+      print('Error loading image bytes: $e');
+      return null;
+    }
+  }
+
+  // 7. Method untuk mendapatkan path avatar default
+  static String getDefaultAvatar() {
+    return defaultAvatarPath;
+  }
+
+  // 8. Method untuk mendapatkan path achievement default
+  static String getDefaultAchievementImage() {
+    return defaultAchievementImage;
+  }
+
+  // 9. Check jika path adalah data URL
+  bool isDataUrl(String path) {
+    return kIsWeb && path.startsWith('data:image');
   }
 }

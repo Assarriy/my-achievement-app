@@ -2,20 +2,32 @@ class User {
   final String id;
   final String name;
   final String email;
-  final String? avatarPath;
-  final bool emailNotifications;
-  final bool pushNotifications;
+  final String? avatarPath; // Bisa berupa file path, data URL, atau assets path
+  final bool? emailNotifications;
+  final bool? pushNotifications;
 
   User({
     required this.id,
     required this.name,
     required this.email,
     this.avatarPath,
-    this.emailNotifications = true,
-    this.pushNotifications = false,
+    this.emailNotifications,
+    this.pushNotifications,
   });
 
-  // Convert to Map for JSON storage
+  // Konversi dari Map ke object User
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      email: json['email'] as String,
+      avatarPath: json['avatarPath'] as String?,
+      emailNotifications: json['emailNotifications'] as bool?,
+      pushNotifications: json['pushNotifications'] as bool?,
+    );
+  }
+
+  // Konversi dari object User ke Map
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -27,19 +39,7 @@ class User {
     };
   }
 
-  // Create from Map (for loading from JSON)
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      avatarPath: json['avatarPath'],
-      emailNotifications: json['emailNotifications'] ?? true,
-      pushNotifications: json['pushNotifications'] ?? false,
-    );
-  }
-
-  // Copy with method for updates
+  // Copy with method untuk update
   User copyWith({
     String? id,
     String? name,

@@ -38,4 +38,23 @@ class Achievement {
       'imagePath': imagePath,
     };
   }
+
+  // Copy with method untuk update
+  Achievement copyWith({
+    String? id,
+    String? title,
+    DateTime? date,
+    String? category,
+    String? description,
+    String? imagePath,
+  }) {
+    return Achievement(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      imagePath: imagePath ?? this.imagePath,
+    );
+  }
 }
