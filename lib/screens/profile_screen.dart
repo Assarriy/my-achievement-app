@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
 import '../providers/achievement_provider.dart';
 import '../providers/user_provider.dart';
 import 'edit_profile_screen.dart';
@@ -59,6 +60,76 @@ class _ProfileScreenState extends State<ProfileScreen>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Method untuk menampilkan gambar profil - SESUAIKAN DENGAN PROVIDER YANG ADA
+  Widget _buildProfileImage(UserProvider userProvider) {
+    final user = userProvider.currentUser;
+    
+    // Langsung gunakan avatarPath dari user yang sudah disimpan
+    if (user?.avatarPath != null && user!.avatarPath!.isNotEmpty) {
+      if (user.avatarPath!.startsWith('assets')) {
+        // Gunakan Image.asset untuk gambar dari assets
+        return ClipOval(
+          child: Image.asset(
+            user.avatarPath!,
+            fit: BoxFit.cover,
+            width: 80,
+            height: 80,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultAvatar();
+            },
+          ),
+        );
+      } else if (user.avatarPath!.startsWith('data:image') || 
+                 user.avatarPath!.startsWith('http') ||
+                 user.avatarPath!.startsWith('file://')) {
+        // Untuk web - data URL, URL external, atau file path
+        return ClipOval(
+          child: Image.network(
+            user.avatarPath!,
+            fit: BoxFit.cover,
+            width: 80,
+            height: 80,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultAvatar();
+            },
+          ),
+        );
+      } else {
+        // Untuk local file path (mobile/desktop)
+        try {
+          return ClipOval(
+            child: Image.file(
+              File(user.avatarPath!),
+              fit: BoxFit.cover,
+              width: 80,
+              height: 80,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildDefaultAvatar();
+              },
+            ),
+          );
+        } catch (e) {
+          // Fallback jika file tidak ditemukan
+          return _buildDefaultAvatar();
+        }
+      }
+    }
+
+    // Fallback: Default avatar
+    return _buildDefaultAvatar();
+  }
+
+  Widget _buildDefaultAvatar() {
+    return Container(
+      color: Colors.white.withOpacity(0.1),
+      child: Icon(
+        Icons.person,
+        size: 36,
+        color: Colors.white,
+      ),
+    );
   }
 
   @override
@@ -147,20 +218,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               width: 2,
                                             ),
                                           ),
-                                          child: user?.avatarPath != null
-                                              ? ClipOval(
-                                                  child: Image.file(
-                                                    File(user!.avatarPath!),
-                                                    fit: BoxFit.cover,
-                                                    width: 80,
-                                                    height: 80,
-                                                  ),
-                                                )
-                                              : Icon(
-                                                  Icons.person,
-                                                  size: 36,
-                                                  color: Colors.white,
-                                                ),
+                                          // GUNAKAN: Method yang sesuai dengan provider tanpa avatarBytes
+                                          child: _buildProfileImage(userProvider),
                                         ),
                                       ),
                                       SizedBox(width: 16),
@@ -186,8 +245,83 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 fontWeight: FontWeight.w400,
                                               ),
                                             ),
+                                            SizedBox(height: 8),
+                                            // Tambahan: Tampilkan notifikasi settings
+                                            if (user != null) 
+                                            Row(
+                                              children: [
+                                                if (user.emailNotifications ?? false)
+                                                  Container(
+                                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.green.withOpacity(0.2),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(color: Colors.green),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(Icons.email, size: 12, color: Colors.green),
+                                                        SizedBox(width: 4),
+                                                        Text('Email', style: TextStyle(fontSize: 10, color: Colors.green)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                SizedBox(width: 8),
+                                                if (user.pushNotifications ?? false)
+                                                  Container(
+                                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blue.withOpacity(0.2),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(color: Colors.blue),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(Icons.notifications, size: 12, color: Colors.blue),
+                                                        SizedBox(width: 4),
+                                                        Text('Push', style: TextStyle(fontSize: 10, color: Colors.blue)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ],
                                         ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.edit,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            PageRouteBuilder(
+                                              pageBuilder: (context, animation, secondaryAnimation) => EditProfileScreen(),
+                                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                                return SlideTransition(
+                                                  position: Tween<Offset>(
+                                                    begin: const Offset(1.0, 0.0),
+                                                    end: Offset.zero,
+                                                  ).animate(CurvedAnimation(
+                                                    parent: animation,
+                                                    curve: Curves.easeInOutCubic,
+                                                  )),
+                                                  child: FadeTransition(
+                                                    opacity: animation,
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ).then((_) {
+                                            // Refresh UI ketika kembali dari edit profile
+                                            // Provider akan otomatis notifyListeners() setelah update
+                                            setState(() {});
+                                          });
+                                        },
                                       ),
                                     ],
                                   ),
@@ -295,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       onTap: () {
                                         Navigator.of(context).push(
                                           PageRouteBuilder(
-                                            pageBuilder: (context, animation, secondaryAnimation) => const EditProfileScreen(),
+                                            pageBuilder: (context, animation, secondaryAnimation) => EditProfileScreen(),
                                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                               return SlideTransition(
                                                 position: Tween<Offset>(
@@ -312,7 +446,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               );
                                             },
                                           ),
-                                        );
+                                        ).then((_) {
+                                          // Refresh UI ketika kembali dari edit profile
+                                          setState(() {});
+                                        });
                                       },
                                     ),
 
@@ -326,7 +463,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       icon: Icons.notifications,
                                       title: 'Notifications',
                                       subtitle: 'Manage your notification preferences',
-                                      onTap: () {},
+                                      onTap: () {
+                                        _showComingSoon(context);
+                                      },
                                     ),
 
                                     Container(
@@ -339,7 +478,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       icon: Icons.security,
                                       title: 'Privacy & Security',
                                       subtitle: 'Control your privacy settings',
-                                      onTap: () {},
+                                      onTap: () {
+                                        _showComingSoon(context);
+                                      },
                                     ),
 
                                     Container(
@@ -352,7 +493,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       icon: Icons.help_outline,
                                       title: 'Help & Support',
                                       subtitle: 'Get help and contact support',
-                                      onTap: () {},
+                                      onTap: () {
+                                        _showComingSoon(context);
+                                      },
+                                    ),
+
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                                      height: 1,
+                                      color: Color(0xFF334155),
+                                    ),
+
+                                    _buildModernSettingItem(
+                                      icon: Icons.logout,
+                                      title: 'Logout',
+                                      subtitle: 'Sign out from your account',
+                                      onTap: () {
+                                        _showLogoutDialog(context);
+                                      },
                                     ),
                                   ],
                                 ),
@@ -396,6 +554,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ... (method-method lainnya tetap sama)
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
@@ -593,5 +752,85 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (totalWeeks <= 0) return '0';
     final average = (achievements.length / totalWeeks).toStringAsFixed(1);
     return average;
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Fitur ini akan segera hadir!',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Color(0xFF667EEA),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Logout',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin logout?',
+            style: TextStyle(
+              color: Colors.white70,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Batal',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Implement logout logic here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Berhasil logout'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF667EEA),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

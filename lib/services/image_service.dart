@@ -10,7 +10,7 @@ class ImageService {
   final ImagePicker _picker = ImagePicker();
 
   // Default avatar path untuk assets
-  static const String defaultAvatarPath = 'assets/images/avatars/default_avatar.png';
+  static const String defaultAvatarPath = 'assets/images/avatars/default_avatar.jpeg';
   static const String defaultAchievementImage = 'assets/images/achievements/default_achievement.png';
 
   // 1. Ambil gambar dari galeri/kamera
