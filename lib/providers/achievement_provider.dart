@@ -19,6 +19,21 @@ class AchievementProvider with ChangeNotifier {
   List<Achievement> get achievements => _achievements;
   SortType get sortType => _sortType;
 
+  // Get favorite achievements count
+  int get favoriteCount {
+    return _achievements.where((achievement) => achievement.isFavorite).length;
+  }
+
+  // Get total achievements count
+  int get totalCount {
+    return _achievements.length;
+  }
+
+  // Get favorite achievements
+  List<Achievement> get favoriteAchievements {
+    return _achievements.where((achievement) => achievement.isFavorite).toList();
+  }
+
   AchievementProvider() {
     loadAchievements();
   }
@@ -63,10 +78,28 @@ class AchievementProvider with ChangeNotifier {
       category: category,
       description: description,
       imagePath: imagePath,
+      isFavorite: false, // Default false untuk achievement baru
     );
 
     _achievements.add(newAchievement);
     await _saveAndNotify();
+  }
+
+  // Toggle favorite status
+  Future<void> toggleFavorite(String id) async {
+    try {
+      final index = _achievements.indexWhere((achievement) => achievement.id == id);
+      if (index != -1) {
+        final updatedAchievement = _achievements[index].copyWith(
+          isFavorite: !_achievements[index].isFavorite,
+        );
+        _achievements[index] = updatedAchievement;
+        await _saveAndNotify();
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      throw Exception('Could not toggle favorite');
+    }
   }
 
   Future<void> deleteAchievement(String id) async {
@@ -116,6 +149,7 @@ class AchievementProvider with ChangeNotifier {
         }
       }
 
+      // Pertahankan status favorite yang sudah ada
       final updatedAchievement = Achievement(
         id: id,
         title: title,
@@ -123,6 +157,7 @@ class AchievementProvider with ChangeNotifier {
         category: category,
         description: description,
         imagePath: imagePath,
+        isFavorite: oldAchievement.isFavorite, // Pertahankan status favorite
       );
 
       _achievements[achIndex] = updatedAchievement;

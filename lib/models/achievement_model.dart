@@ -4,7 +4,8 @@ class Achievement {
   final DateTime date;
   final String category;
   final String description;
-  final String? imagePath; // Menyimpan PATH file lokal, bukan file-nya
+  final String? imagePath;
+  final bool isFavorite; // Tambahkan properti favorite
 
   Achievement({
     required this.id,
@@ -13,6 +14,7 @@ class Achievement {
     required this.category,
     required this.description,
     this.imagePath,
+    this.isFavorite = false, // Default value false
   });
 
   // Konversi dari Map (hasil jsonDecode) ke object Achievement
@@ -20,10 +22,11 @@ class Achievement {
     return Achievement(
       id: json['id'] as String,
       title: json['title'] as String,
-      date: DateTime.parse(json['date'] as String), // Simpan sbg String ISO
+      date: DateTime.parse(json['date'] as String),
       category: json['category'] as String,
       description: json['description'] as String,
       imagePath: json['imagePath'] as String?,
+      isFavorite: json['isFavorite'] ?? false, // Load dari JSON
     );
   }
 
@@ -32,10 +35,11 @@ class Achievement {
     return {
       'id': id,
       'title': title,
-      'date': date.toIso8601String(), // Simpan sbg String, lebih aman
+      'date': date.toIso8601String(),
       'category': category,
       'description': description,
       'imagePath': imagePath,
+      'isFavorite': isFavorite, // Tambahkan ke JSON
     };
   }
 
@@ -47,6 +51,7 @@ class Achievement {
     String? category,
     String? description,
     String? imagePath,
+    bool? isFavorite, // Tambahkan di copyWith
   }) {
     return Achievement(
       id: id ?? this.id,
@@ -55,6 +60,7 @@ class Achievement {
       category: category ?? this.category,
       description: description ?? this.description,
       imagePath: imagePath ?? this.imagePath,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 }

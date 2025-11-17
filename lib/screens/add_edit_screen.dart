@@ -27,7 +27,7 @@ class _AddEditScreenState extends State<AddEditScreen>
   late TextEditingController _descController;
 
   DateTime _selectedDate = DateTime.now();
-  Uint8List? _selectedImageBytes; // Ganti File dengan Uint8List
+  Uint8List? _selectedImageBytes;
   String? _existingImagePath;
   String? _selectedCategoryName;
 
@@ -35,7 +35,7 @@ class _AddEditScreenState extends State<AddEditScreen>
   bool _isLoading = false;
   bool _isImageHovered = false;
 
-  // Enhanced Animations
+  // Animations
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
@@ -46,7 +46,7 @@ class _AddEditScreenState extends State<AddEditScreen>
   void initState() {
     super.initState();
 
-    // Initialize enhanced animations
+    // Initialize animations
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -98,6 +98,7 @@ class _AddEditScreenState extends State<AddEditScreen>
     } else {
       _titleController = TextEditingController();
       _descController = TextEditingController();
+      _selectedCategoryName = 'Work'; // Default category
     }
   }
 
@@ -150,6 +151,7 @@ class _AddEditScreenState extends State<AddEditScreen>
     if (imageBytes != null) {
       setState(() {
         _selectedImageBytes = imageBytes;
+        _existingImagePath = null; // Clear existing image when new one is selected
       });
     }
   }
@@ -183,9 +185,7 @@ class _AddEditScreenState extends State<AddEditScreen>
           date: _selectedDate,
           category: _selectedCategoryName!,
           description: _descController.text,
-          newImageBytes: _selectedImageBytes, // Untuk web
-          newImageFile: _selectedImageBytes != null ? 
-              _convertBytesToFile(_selectedImageBytes!) : null, // Untuk mobile
+          newImageBytes: _selectedImageBytes,
         );
       } else {
         await provider.addAchievement(
@@ -193,14 +193,12 @@ class _AddEditScreenState extends State<AddEditScreen>
           date: _selectedDate,
           category: _selectedCategoryName!,
           description: _descController.text,
-          imageBytes: _selectedImageBytes, // Untuk web
-          tempImage: _selectedImageBytes != null ? 
-              _convertBytesToFile(_selectedImageBytes!) : null, // Untuk mobile
+          imageBytes: _selectedImageBytes,
         );
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true); // Return success
       }
     } catch (error) {
       setState(() {
@@ -214,11 +212,69 @@ class _AddEditScreenState extends State<AddEditScreen>
     }
   }
 
-  // Helper untuk convert bytes ke file (hanya untuk mobile)
-  File _convertBytesToFile(Uint8List bytes) {
-    // Ini adalah workaround untuk mobile
-    // Di production, Anda mungkin perlu implementasi yang lebih robust
-    return File.fromRawPath(bytes);
+  void _deleteAchievement() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Delete Achievement',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this achievement? This action cannot be undone.',
+            style: TextStyle(color: Color(0xFF94A3B8)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Color(0xFF667EEA))),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _confirmDelete();
+              },
+              child: Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDelete() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final provider = context.read<AchievementProvider>();
+      await provider.deleteAchievement(widget.achievementToEdit!.id);
+      
+      if (mounted) {
+        Navigator.of(context).pop('deleted');
+      }
+    } catch (error) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showSnackBar(
+        'Failed to delete: $error',
+        Icons.error,
+        Colors.red,
+      );
+    }
   }
 
   void _showSnackBar(String message, IconData icon, Color color) {
@@ -299,7 +355,6 @@ class _AddEditScreenState extends State<AddEditScreen>
               ),
             ),
             SizedBox(height: 20),
-            // Enhanced Manage Categories Button
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
@@ -324,24 +379,8 @@ class _AddEditScreenState extends State<AddEditScreen>
                 child: InkWell(
                   onTap: () {
                     Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          return SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(1.0, 0.0),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeInOutCubic,
-                            )),
-                            child: FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                          );
-                        },
-                        transitionDuration: Duration(milliseconds: 600),
+                      MaterialPageRoute(
+                        builder: (context) => ManageCategoriesScreen(),
                       ),
                     );
                   },
@@ -378,13 +417,11 @@ class _AddEditScreenState extends State<AddEditScreen>
         Wrap(
           spacing: 12.0,
           runSpacing: 12.0,
-          children: categories.asMap().entries.map((entry) {
-            final index = entry.key;
-            final category = entry.value;
+          children: categories.map((category) {
             final isSelected = _selectedCategoryName == category.name;
             
             return AnimatedContainer(
-              duration: Duration(milliseconds: 400 + (index * 100)),
+              duration: Duration(milliseconds: 400),
               curve: Curves.easeOutCubic,
               child: FilterChip(
                 label: Text(
@@ -421,7 +458,6 @@ class _AddEditScreenState extends State<AddEditScreen>
           }).toList(),
         ),
         SizedBox(height: 16),
-        // Manage Categories Button (Always Visible)
         Align(
           alignment: Alignment.centerRight,
           child: AnimatedContainer(
@@ -436,24 +472,8 @@ class _AddEditScreenState extends State<AddEditScreen>
               child: InkWell(
                 onTap: () {
                   Navigator.of(context).push(
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(1.0, 0.0),
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeInOutCubic,
-                          )),
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      transitionDuration: Duration(milliseconds: 600),
+                    MaterialPageRoute(
+                      builder: (context) => ManageCategoriesScreen(),
                     ),
                   );
                 },
@@ -488,7 +508,7 @@ class _AddEditScreenState extends State<AddEditScreen>
     Widget imageContent;
 
     if (_selectedImageBytes != null) {
-      // Gambar yang baru dipilih
+      // Newly selected image
       imageContent = ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Image.memory(
@@ -499,9 +519,9 @@ class _AddEditScreenState extends State<AddEditScreen>
         ),
       );
     } else if (_existingImagePath != null && _existingImagePath!.isNotEmpty) {
-      // Gambar yang sudah ada di database
+      // Existing image from database
       if (_existingImagePath!.startsWith('assets/')) {
-        // Gambar dari assets
+        // Asset image
         imageContent = ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
@@ -511,8 +531,8 @@ class _AddEditScreenState extends State<AddEditScreen>
             height: 180,
           ),
         );
-      } else if (_existingImagePath!.startsWith('data:image')) {
-        // Data URL (web)
+      } else if (_existingImagePath!.startsWith('http')) {
+        // Network image
         imageContent = ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.network(
@@ -520,10 +540,13 @@ class _AddEditScreenState extends State<AddEditScreen>
             fit: BoxFit.cover,
             width: 180,
             height: 180,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildImagePlaceholder();
+            },
           ),
         );
       } else {
-        // Local file path (hanya untuk mobile/desktop)
+        // Local file path
         imageContent = ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.file(
@@ -531,25 +554,15 @@ class _AddEditScreenState extends State<AddEditScreen>
             fit: BoxFit.cover,
             width: 180,
             height: 180,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildImagePlaceholder();
+            },
           ),
         );
       }
     } else {
       // Placeholder
-      imageContent = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.photo_camera, size: 50, color: Color(0xFF64748B)),
-          SizedBox(height: 12),
-          Text('No Image', 
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-          ),
-          SizedBox(height: 4),
-          Text('Tap to select',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-          ),
-        ],
-      );
+      imageContent = _buildImagePlaceholder();
     }
 
     return MouseRegion(
@@ -619,6 +632,23 @@ class _AddEditScreenState extends State<AddEditScreen>
     );
   }
 
+  Widget _buildImagePlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.photo_camera, size: 50, color: Color(0xFF64748B)),
+        SizedBox(height: 12),
+        Text('No Image', 
+          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+        ),
+        SizedBox(height: 4),
+        Text('Tap to select',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -629,13 +659,26 @@ class _AddEditScreenState extends State<AddEditScreen>
           return CustomScrollView(
             physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
-              // Enhanced Modern App Bar
+              // Enhanced App Bar
               SliverAppBar(
-                expandedHeight: 200.0,
+                expandedHeight: 180.0,
                 floating: false,
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8.0, top: 8.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -645,35 +688,11 @@ class _AddEditScreenState extends State<AddEditScreen>
                         colors: [
                           Color(0xFF667EEA),
                           Color(0xFF764BA2),
-                          Color(0xFFF093FB),
                         ],
-                        stops: [0.0, 0.6, 1.0],
                       ),
                     ),
                     child: Stack(
                       children: [
-                        // Animated Background Elements
-                        Positioned(
-                          top: -60,
-                          right: -60,
-                          child: AnimatedContainer(
-                            duration: Duration(seconds: 20),
-                            curve: Curves.linear,
-                            width: 200,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.15),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        
-                        // Content
                         Padding(
                           padding: const EdgeInsets.all(24.0),
                           child: Column(
@@ -743,6 +762,22 @@ class _AddEditScreenState extends State<AddEditScreen>
                   ),
                 ),
                 actions: [
+                  if (_isEditMode)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0, top: 8.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: _deleteAchievement,
+                          tooltip: 'Delete',
+                        ),
+                      ),
+                    ),
+                  SizedBox(width: 8),
                   if (_isLoading)
                     Padding(
                       padding: EdgeInsets.only(right: 16.0),
@@ -754,12 +789,21 @@ class _AddEditScreenState extends State<AddEditScreen>
                       ),
                     )
                   else
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: IconButton(
-                        icon: Icon(Icons.save, color: Colors.white),
-                        onPressed: _saveForm,
-                        tooltip: 'Save',
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0, top: 8.0),
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Icon(Icons.save, color: Colors.white),
+                            onPressed: _saveForm,
+                            tooltip: 'Save',
+                          ),
+                        ),
                       ),
                     ),
                 ],

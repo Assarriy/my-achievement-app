@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/achievement_provider.dart';
 
 class DetailScreen extends StatefulWidget {
+  final String id;
   final String title;
   final String description;
   final String imageUrl;
 
   const DetailScreen({
     super.key,
+    required this.id,
     required this.title,
     required this.description,
     required this.imageUrl,
@@ -23,8 +27,6 @@ class _DetailScreenState extends State<DetailScreen>
   late Animation<double> _slideAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<Color?> _colorAnimation;
-
-  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -77,23 +79,24 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   void _toggleFavorite() {
-    setState(() {
-      _isFavorite = !_isFavorite;
-    });
+    final provider = context.read<AchievementProvider>();
+    provider.toggleFavorite(widget.id);
+    
+    final isFavorite = provider.getAchievementById(widget.id)?.isFavorite ?? false;
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, 
+            Icon(isFavorite ? Icons.favorite : Icons.favorite_border, 
               color: Colors.white, size: 20),
             SizedBox(width: 12),
-            Text(_isFavorite 
+            Text(isFavorite 
               ? 'Added to Favorites!' 
               : 'Removed from Favorites!'),
           ],
         ),
-        backgroundColor: Color(0xFF667EEA),
+        backgroundColor: isFavorite ? Colors.red : Color(0xFF667EEA),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.all(16),
@@ -102,8 +105,38 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
+  void _navigateToEditScreen() {
+    // Navigate to edit screen - Anda perlu mengimplementasikan ini
+    // Navigator.of(context).push(
+    //   MaterialPageRoute(
+    //     builder: (context) => AddEditScreen(
+    //       achievementToEdit: context.read<AchievementProvider>().getAchievementById(widget.id),
+    //     ),
+    //   ),
+    // );
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.edit, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Text('Edit feature coming soon!'),
+          ],
+        ),
+        backgroundColor: Color(0xFF667EEA),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AchievementProvider>();
+    final achievement = provider.getAchievementById(widget.id);
+    final isFavorite = achievement?.isFavorite ?? false;
+
     return Scaffold(
       backgroundColor: Color(0xFF0F172A),
       body: AnimatedBuilder(
@@ -119,12 +152,25 @@ class _DetailScreenState extends State<DetailScreen>
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8.0, top: 8.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     children: [
                       // Hero Image
                       Hero(
-                        tag: 'item-${widget.title}',
+                        tag: 'item-${widget.id}',
                         child: Container(
                           width: double.infinity,
                           height: 400,
@@ -189,7 +235,7 @@ class _DetailScreenState extends State<DetailScreen>
                           decoration: BoxDecoration(
                             gradient: RadialGradient(
                               colors: [
-                                Color(0xFF667EEA).withOpacity(0.1),
+                                (isFavorite ? Colors.red : Color(0xFF667EEA)).withOpacity(0.1),
                                 Colors.transparent,
                               ],
                             ),
@@ -197,37 +243,68 @@ class _DetailScreenState extends State<DetailScreen>
                           ),
                         ),
                       ),
+
+                      // Favorite Badge
+                      if (isFavorite)
+                        Positioned(
+                          top: 50,
+                          left: 20,
+                          child: ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: Container(
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.red.withOpacity(0.4),
+                                    blurRadius: 15,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.favorite,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 actions: [
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Container(
-                      margin: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: Icon(Icons.share, color: Colors.white),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  Icon(Icons.share, color: Colors.white),
-                                  SizedBox(width: 12),
-                                  Text('Share feature coming soon!'),
-                                ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0, top: 8.0),
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.share, color: Colors.white),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.share, color: Colors.white),
+                                    SizedBox(width: 12),
+                                    Text('Share feature coming soon!'),
+                                  ],
+                                ),
+                                backgroundColor: Color(0xFF667EEA),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                               ),
-                              backgroundColor: Color(0xFF667EEA),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -257,24 +334,29 @@ class _DetailScreenState extends State<DetailScreen>
                                       padding: EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFF667EEA),
-                                            Color(0xFF764BA2),
-                                          ],
+                                          colors: isFavorite
+                                            ? [
+                                                Colors.red,
+                                                Colors.red.withOpacity(0.7),
+                                              ]
+                                            : [
+                                                Color(0xFF667EEA),
+                                                Color(0xFF764BA2),
+                                              ],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Color(0xFF667EEA).withOpacity(0.4),
+                                            color: (isFavorite ? Colors.red : Color(0xFF667EEA)).withOpacity(0.4),
                                             blurRadius: 15,
                                             offset: Offset(2, 2),
                                           ),
                                         ],
                                       ),
                                       child: Icon(
-                                        Icons.auto_awesome,
+                                        isFavorite ? Icons.favorite : Icons.auto_awesome,
                                         color: Colors.white,
                                         size: 32,
                                       ),
@@ -301,16 +383,16 @@ class _DetailScreenState extends State<DetailScreen>
                                             vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Color(0xFF667EEA).withOpacity(0.2),
+                                            color: (isFavorite ? Colors.red : Color(0xFF667EEA)).withOpacity(0.2),
                                             borderRadius: BorderRadius.circular(12),
                                             border: Border.all(
-                                              color: Color(0xFF667EEA).withOpacity(0.3),
+                                              color: (isFavorite ? Colors.red : Color(0xFF667EEA)).withOpacity(0.3),
                                             ),
                                           ),
                                           child: Text(
-                                            'ACHIEVEMENT',
+                                            isFavorite ? 'FAVORITE ACHIEVEMENT' : 'ACHIEVEMENT',
                                             style: TextStyle(
-                                              color: Color(0xFF667EEA),
+                                              color: isFavorite ? Colors.red : Color(0xFF667EEA),
                                               fontWeight: FontWeight.w700,
                                               fontSize: 12,
                                               letterSpacing: 1.5,
@@ -331,8 +413,8 @@ class _DetailScreenState extends State<DetailScreen>
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFF667EEA),
-                                      Color(0xFF667EEA).withOpacity(0.3),
+                                      isFavorite ? Colors.red : Color(0xFF667EEA),
+                                      (isFavorite ? Colors.red : Color(0xFF667EEA)).withOpacity(0.3),
                                       Colors.transparent,
                                     ],
                                     stops: [0.0, 0.5, 1.0],
@@ -360,7 +442,7 @@ class _DetailScreenState extends State<DetailScreen>
                                     ),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Color(0xFF475569),
+                                      color: isFavorite ? Colors.red.withOpacity(0.3) : Color(0xFF475569),
                                       width: 1.5,
                                     ),
                                     boxShadow: [
@@ -379,11 +461,11 @@ class _DetailScreenState extends State<DetailScreen>
                                           Container(
                                             padding: EdgeInsets.all(8),
                                             decoration: BoxDecoration(
-                                              color: Color(0xFF667EEA).withOpacity(0.1),
+                                              color: (isFavorite ? Colors.red : Color(0xFF667EEA)).withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(12),
                                             ),
                                             child: Icon(Icons.description, 
-                                              color: Color(0xFF667EEA), size: 24),
+                                              color: isFavorite ? Colors.red : Color(0xFF667EEA), size: 24),
                                           ),
                                           SizedBox(width: 12),
                                           Text(
@@ -425,16 +507,21 @@ class _DetailScreenState extends State<DetailScreen>
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(16),
                                             gradient: LinearGradient(
-                                              colors: [
-                                                Color(0xFF667EEA),
-                                                Color(0xFF764BA2),
-                                              ],
+                                              colors: isFavorite
+                                                ? [
+                                                    Colors.red,
+                                                    Colors.red.withOpacity(0.7),
+                                                  ]
+                                                : [
+                                                    Color(0xFF667EEA),
+                                                    Color(0xFF764BA2),
+                                                  ],
                                               begin: Alignment.topLeft,
                                               end: Alignment.bottomRight,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: _colorAnimation.value!.withOpacity(0.5),
+                                                color: (isFavorite ? Colors.red : _colorAnimation.value!).withOpacity(0.5),
                                                 blurRadius: 20,
                                                 offset: Offset(0, 8),
                                               ),
@@ -455,17 +542,17 @@ class _DetailScreenState extends State<DetailScreen>
                                                     AnimatedSwitcher(
                                                       duration: Duration(milliseconds: 300),
                                                       child: Icon(
-                                                        _isFavorite 
+                                                        isFavorite 
                                                             ? Icons.favorite 
                                                             : Icons.favorite_border,
-                                                        key: ValueKey(_isFavorite),
+                                                        key: ValueKey(isFavorite),
                                                         color: Colors.white,
                                                         size: 24,
                                                       ),
                                                     ),
                                                     SizedBox(width: 12),
                                                     Text(
-                                                      _isFavorite 
+                                                      isFavorite 
                                                           ? 'In Favorites' 
                                                           : 'Add to Favorites',
                                                       style: TextStyle(
@@ -506,9 +593,7 @@ class _DetailScreenState extends State<DetailScreen>
                                       child: Material(
                                         color: Colors.transparent,
                                         child: InkWell(
-                                          onTap: () {
-                                            // Edit action
-                                          },
+                                          onTap: _navigateToEditScreen,
                                           borderRadius: BorderRadius.circular(16),
                                           child: Container(
                                             padding: EdgeInsets.all(16),
@@ -527,7 +612,7 @@ class _DetailScreenState extends State<DetailScreen>
 
                               SizedBox(height: 32),
 
-                              // Additional Info Section
+                              // Additional Info Section - Hanya Date dan Category
                               ScaleTransition(
                                 scale: _scaleAnimation,
                                 child: Container(
@@ -541,11 +626,20 @@ class _DetailScreenState extends State<DetailScreen>
                                     ),
                                   ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      _buildInfoItem(Icons.calendar_today, 'Date', 'Today'),
-                                      _buildInfoItem(Icons.category, 'Category', 'Achievement'),
-                                      _buildInfoItem(Icons.visibility, 'Views', '156'),
+                                      _buildInfoItem(
+                                        Icons.calendar_today, 
+                                        'Date', 
+                                        achievement?.date != null 
+                                            ? _formatDate(achievement!.date) 
+                                            : 'Unknown'
+                                      ),
+                                      _buildInfoItem(
+                                        Icons.category, 
+                                        'Category', 
+                                        achievement?.category ?? 'General'
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -598,5 +692,13 @@ class _DetailScreenState extends State<DetailScreen>
         ),
       ],
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return "${date.day} ${months[date.month - 1]} ${date.year}";
   }
 }

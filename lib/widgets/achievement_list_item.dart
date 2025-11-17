@@ -38,38 +38,34 @@ class _AchievementListItemState extends State<AchievementListItem>
     );
 
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController, 
-        curve: Curves.elasticOut
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController, 
-        curve: Curves.easeInOutCubic
-      ),
-    );
-
-    _colorAnimation = ColorTween(
-      begin: Color(0xFF667EEA).withOpacity(0.7),
-      end: Color(0xFF667EEA),
-    ).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Curves.easeInOutCubic,
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: Offset(0.8, 0.0), 
-      end: Offset.zero
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    _colorAnimation =
+        ColorTween(
+          begin: Color(0xFF667EEA).withOpacity(0.7),
+          end: Color(0xFF667EEA),
+        ).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOutCubic,
+          ),
+        );
+
+    _slideAnimation = Tween<Offset>(begin: Offset(0.8, 0.0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutBack,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -115,13 +111,17 @@ class _AchievementListItemState extends State<AchievementListItem>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3 * _fadeAnimation.value),
+                          color: Colors.black.withOpacity(
+                            0.3 * _fadeAnimation.value,
+                          ),
                           blurRadius: _isHovered ? 25 : 15,
                           offset: Offset(0, _isHovered ? 12 : 6),
                           spreadRadius: _isHovered ? 1 : 0,
                         ),
                         BoxShadow(
-                          color: Color(0xFF667EEA).withOpacity(0.1 * _fadeAnimation.value),
+                          color: Color(
+                            0xFF667EEA,
+                          ).withOpacity(0.1 * _fadeAnimation.value),
                           blurRadius: 10,
                           offset: Offset(0, 4),
                         ),
@@ -131,34 +131,55 @@ class _AchievementListItemState extends State<AchievementListItem>
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
-                        onTap: widget.onTap ?? () {
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => DetailScreen(
-                                title: widget.achievement.title,
-                                description: widget.achievement.description,
-                                imageUrl: widget.achievement.imagePath ??
-                                    'https://via.placeholder.com/600x400?text=No+Image',
-                              ),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                return ScaleTransition(
-                                  scale: Tween<double>(
-                                    begin: 0.9,
-                                    end: 1.0,
-                                  ).animate(CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOutCubic,
-                                  )),
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
+                        onTap:
+                            widget.onTap ??
+                            () {
+                              Navigator.of(context).push(
+                                PageRouteBuilder(
+                                  pageBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                      ) => DetailScreen(
+                                        id: widget.achievement.id, // Kirim ID
+                                        title: widget.achievement.title,
+                                        description:
+                                            widget.achievement.description,
+                                        imageUrl:
+                                            widget.achievement.imagePath ??
+                                            'https://via.placeholder.com/600x400?text=No+Image',
+                                      ),
+                                  transitionsBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                        child,
+                                      ) {
+                                        return ScaleTransition(
+                                          scale:
+                                              Tween<double>(
+                                                begin: 0.9,
+                                                end: 1.0,
+                                              ).animate(
+                                                CurvedAnimation(
+                                                  parent: animation,
+                                                  curve: Curves.easeOutCubic,
+                                                ),
+                                              ),
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                  transitionDuration: Duration(
+                                    milliseconds: 500,
                                   ),
-                                );
-                              },
-                              transitionDuration: Duration(milliseconds: 500),
-                            ),
-                          );
-                        },
+                                ),
+                              );
+                            },
                         splashColor: Color(0xFF667EEA).withOpacity(0.2),
                         highlightColor: Color(0xFF667EEA).withOpacity(0.1),
                         child: Container(
@@ -173,9 +194,9 @@ class _AchievementListItemState extends State<AchievementListItem>
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _isHovered 
-                                ? Color(0xFF667EEA).withOpacity(0.5)
-                                : Color(0xFF475569).withOpacity(0.5),
+                              color: _isHovered
+                                  ? Color(0xFF667EEA).withOpacity(0.5)
+                                  : Color(0xFF475569).withOpacity(0.5),
                               width: _isHovered ? 2 : 1.5,
                             ),
                           ),
@@ -235,17 +256,24 @@ class _AchievementListItemState extends State<AchievementListItem>
                                               begin: Alignment.topLeft,
                                               end: Alignment.bottomRight,
                                             ),
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: _colorAnimation.value!.withOpacity(0.5),
-                                                blurRadius: _isHovered ? 15 : 10,
+                                                color: _colorAnimation.value!
+                                                    .withOpacity(0.5),
+                                                blurRadius: _isHovered
+                                                    ? 15
+                                                    : 10,
                                                 offset: Offset(2, 2),
                                               ),
                                             ],
                                           ),
                                           child: AnimatedContainer(
-                                            duration: Duration(milliseconds: 300),
+                                            duration: Duration(
+                                              milliseconds: 300,
+                                            ),
                                             child: Icon(
                                               Icons.auto_awesome,
                                               color: Colors.white,
@@ -261,22 +289,29 @@ class _AchievementListItemState extends State<AchievementListItem>
                                     // Content
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           AnimatedDefaultTextStyle(
-                                            duration: Duration(milliseconds: 300),
+                                            duration: Duration(
+                                              milliseconds: 300,
+                                            ),
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w700,
                                               fontSize: _isHovered ? 18 : 16,
                                               letterSpacing: -0.3,
-                                              shadows: _isHovered ? [
-                                                Shadow(
-                                                  blurRadius: 15,
-                                                  color: Color(0xFF667EEA).withOpacity(0.4),
-                                                  offset: Offset(2, 2),
-                                                ),
-                                              ] : [],
+                                              shadows: _isHovered
+                                                  ? [
+                                                      Shadow(
+                                                        blurRadius: 15,
+                                                        color: Color(
+                                                          0xFF667EEA,
+                                                        ).withOpacity(0.4),
+                                                        offset: Offset(2, 2),
+                                                      ),
+                                                    ]
+                                                  : [],
                                             ),
                                             child: Text(
                                               widget.achievement.title,
@@ -306,8 +341,11 @@ class _AchievementListItemState extends State<AchievementListItem>
                                               Container(
                                                 padding: EdgeInsets.all(6),
                                                 decoration: BoxDecoration(
-                                                  color: Color(0xFF667EEA).withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  color: Color(
+                                                    0xFF667EEA,
+                                                  ).withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                 ),
                                                 child: Icon(
                                                   Icons.calendar_today,
@@ -317,7 +355,9 @@ class _AchievementListItemState extends State<AchievementListItem>
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
-                                                _formatDate(widget.achievement.date),
+                                                _formatDate(
+                                                  widget.achievement.date,
+                                                ),
                                                 style: TextStyle(
                                                   color: Color(0xFF64748B),
                                                   fontSize: 13,
@@ -328,24 +368,38 @@ class _AchievementListItemState extends State<AchievementListItem>
                                               const Spacer(),
 
                                               // Category badge jika ada
-                                              if (widget.achievement.category.isNotEmpty)
+                                              if (widget
+                                                  .achievement
+                                                  .category
+                                                  .isNotEmpty)
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6,
+                                                      ),
                                                   decoration: BoxDecoration(
                                                     gradient: LinearGradient(
                                                       colors: [
-                                                        Color(0xFF667EEA).withOpacity(0.2),
-                                                        Color(0xFF764BA2).withOpacity(0.1),
+                                                        Color(
+                                                          0xFF667EEA,
+                                                        ).withOpacity(0.2),
+                                                        Color(
+                                                          0xFF764BA2,
+                                                        ).withOpacity(0.1),
                                                       ],
                                                       begin: Alignment.topLeft,
-                                                      end: Alignment.bottomRight,
+                                                      end:
+                                                          Alignment.bottomRight,
                                                     ),
-                                                    borderRadius: BorderRadius.circular(12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
                                                     border: Border.all(
-                                                      color: Color(0xFF667EEA).withOpacity(0.3),
+                                                      color: Color(
+                                                        0xFF667EEA,
+                                                      ).withOpacity(0.3),
                                                     ),
                                                   ),
                                                   child: Text(
@@ -353,7 +407,8 @@ class _AchievementListItemState extends State<AchievementListItem>
                                                     style: TextStyle(
                                                       color: Color(0xFF667EEA),
                                                       fontSize: 11,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                       letterSpacing: 0.5,
                                                     ),
                                                   ),
@@ -375,10 +430,14 @@ class _AchievementListItemState extends State<AchievementListItem>
                                             ? Color(0xFF667EEA).withOpacity(0.2)
                                             : Colors.transparent,
                                         shape: BoxShape.circle,
-                                        border: _isHovered ? Border.all(
-                                          color: Color(0xFF667EEA).withOpacity(0.3),
-                                          width: 1.5,
-                                        ) : null,
+                                        border: _isHovered
+                                            ? Border.all(
+                                                color: Color(
+                                                  0xFF667EEA,
+                                                ).withOpacity(0.3),
+                                                width: 1.5,
+                                              )
+                                            : null,
                                       ),
                                       child: AnimatedRotation(
                                         duration: Duration(milliseconds: 400),
@@ -434,10 +493,7 @@ class _AchievementListItemState extends State<AchievementListItem>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFFDC2626),
-            Color(0xFFEF4444),
-          ],
+          colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -479,8 +535,18 @@ class _AchievementListItemState extends State<AchievementListItem>
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return "${date.day} ${months[date.month - 1]} ${date.year}";
   }

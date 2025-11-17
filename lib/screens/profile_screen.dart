@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/achievement_provider.dart';
@@ -157,6 +156,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                // TAMBAHKAN: Tombol back berwarna putih
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_rounded,
+                      color: Colors.white, // Warna putih
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_achievement_app/models/achievement_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/achievement_provider.dart';
 import '../widgets/achievement_list_item.dart';
@@ -20,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Animation<Color?> _colorAnimation;
   
   int _currentIndex = 0;
-  final List<String> _categories = ['All', 'Work', 'Personal', 'Education', 'Sports'];
+  final List<String> _categories = ['All', 'Favorites', 'Work', 'Personal', 'Education', 'Sports'];
 
   @override
   void initState() {
@@ -80,7 +81,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AchievementProvider>();
-    final achievementCount = provider.achievements.length;
+    final totalCount = provider.totalCount;
+    final favoriteCount = provider.favoriteCount;
+
+    // Filter achievements berdasarkan kategori yang dipilih
+    List<Achievement> filteredAchievements = provider.achievements;
+    if (_currentIndex == 1) { // Favorites
+      filteredAchievements = provider.favoriteAchievements;
+    } else if (_currentIndex > 1) {
+      final selectedCategory = _categories[_currentIndex];
+      filteredAchievements = provider.achievements
+          .where((achievement) => achievement.category == selectedCategory)
+          .toList();
+    }
 
     return Scaffold(
       backgroundColor: Color(0xFF0F172A),
@@ -206,9 +219,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                                           children: [
-                                            _buildStatItem("Total", "$achievementCount", Icons.flag),
-                                            _buildStatItem("Completed", "$achievementCount", Icons.check_circle),
-                                            _buildStatItem("In Progress", "0", Icons.timelapse),
+                                            _buildStatItem(
+                                              "Total", 
+                                              "$totalCount", 
+                                              Icons.flag,
+                                              Colors.white.withOpacity(0.9)
+                                            ),
+                                            _buildStatItem(
+                                              "Favorites", 
+                                              "$favoriteCount", 
+                                              Icons.favorite,
+                                              Colors.red.withOpacity(0.9)
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -405,9 +427,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ],
                       ),
                     ),
-                    child: provider.achievements.isEmpty
+                    child: filteredAchievements.isEmpty
                         ? _buildModernEmptyState()
-                        : _buildModernAchievementsList(provider, context),
+                        : _buildModernAchievementsList(filteredAchievements, provider, context),
                   ),
                 ]),
               ),
@@ -419,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
+  Widget _buildStatItem(String label, String value, IconData icon, Color iconColor) {
     return Column(
       children: [
         Container(
@@ -428,7 +450,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             color: Colors.white.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: iconColor, size: 20),
         ),
         SizedBox(height: 8),
         Text(
@@ -499,14 +521,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     child: Icon(
-                      Icons.auto_awesome_motion,
+                      _currentIndex == 1 ? Icons.favorite_border : Icons.auto_awesome_motion,
                       size: 64,
                       color: Color(0xFF667EEA),
                     ),
                   ),
                   SizedBox(height: 32),
                   Text(
-                    "No Achievements Yet",
+                    _currentIndex == 1 ? "No Favorite Achievements" : "No Achievements Yet",
                     style: TextStyle(
                       fontSize: 24,
                       color: Colors.white,
@@ -516,7 +538,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                   SizedBox(height: 12),
                   Text(
-                    "Start your journey by adding your first achievement\nand track your progress",
+                    _currentIndex == 1 
+                        ? "Mark achievements as favorite to see them here"
+                        : "Start your journey by adding your first achievement\nand track your progress",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -605,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildModernAchievementsList(AchievementProvider provider, BuildContext context) {
+  Widget _buildModernAchievementsList(List<Achievement> achievements, AchievementProvider provider, BuildContext context) {
     return AnimatedBuilder(
       animation: _fadeAnimation,
       builder: (context, child) {
@@ -623,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Recent Achievements",
+                        _currentIndex == 1 ? "Favorite Achievements" : "Recent Achievements",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -638,7 +662,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          "${provider.achievements.length} items",
+                          "${achievements.length} items",
                           style: TextStyle(
                             color: Color(0xFF94A3B8),
                             fontSize: 12,
@@ -655,9 +679,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   physics: NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
                   padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16),
-                  itemCount: provider.achievements.length,
+                  itemCount: achievements.length,
                   itemBuilder: (ctx, index) {
-                    final achievement = provider.achievements[index];
+                    final achievement = achievements[index];
                     final animationDelay = (index * 150).clamp(0, 1000);
                     
                     return AnimatedContainer(
@@ -672,7 +696,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             key: ValueKey(achievement.id), 
                             achievement: achievement,
                             onDismissed: () {
-                              context.read<AchievementProvider>().deleteAchievement(achievement.id);
+                              provider.deleteAchievement(achievement.id);
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
