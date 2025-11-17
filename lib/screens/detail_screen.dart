@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/achievement_provider.dart';
+import 'add_edit_screen.dart'; // Import AddEditScreen
 
 class DetailScreen extends StatefulWidget {
   final String id;
@@ -106,27 +107,113 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   void _navigateToEditScreen() {
-    // Navigate to edit screen - Anda perlu mengimplementasikan ini
-    // Navigator.of(context).push(
-    //   MaterialPageRoute(
-    //     builder: (context) => AddEditScreen(
-    //       achievementToEdit: context.read<AchievementProvider>().getAchievementById(widget.id),
-    //     ),
-    //   ),
-    // );
+    final provider = context.read<AchievementProvider>();
+    final achievement = provider.getAchievementById(widget.id);
+    
+    if (achievement != null) {
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => AddEditScreen(
+            achievementToEdit: achievement,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+              )),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: Duration(milliseconds: 600),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Achievement not found!'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
+  void _deleteAchievement() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete Achievement',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${widget.title}"? This action cannot be undone.',
+          style: TextStyle(color: Color(0xFF94A3B8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF667EEA)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _confirmDelete();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete() {
+    final provider = context.read<AchievementProvider>();
+    provider.deleteAchievement(widget.id);
+    
+    Navigator.of(context).pop();
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.edit, color: Colors.white, size: 20),
+            Icon(Icons.check_circle, color: Colors.white),
             SizedBox(width: 12),
-            Text('Edit feature coming soon!'),
+            Text('Achievement deleted successfully!'),
           ],
         ),
-        backgroundColor: Color(0xFF667EEA),
+        backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -145,26 +232,12 @@ class _DetailScreenState extends State<DetailScreen>
           return CustomScrollView(
             physics: BouncingScrollPhysics(),
             slivers: [
-              // Modern App Bar with Hero Image
               SliverAppBar(
                 expandedHeight: 320.0,
                 floating: false,
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
-                leading: Padding(
-                  padding: const EdgeInsets.only(left: 8.0, top: 8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     children: [
@@ -276,35 +349,50 @@ class _DetailScreenState extends State<DetailScreen>
                   ),
                 ),
                 actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0, top: 8.0),
-                    child: ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.share, color: Colors.white),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Icon(Icons.share, color: Colors.white),
-                                    SizedBox(width: 12),
-                                    Text('Share feature coming soon!'),
-                                  ],
-                                ),
-                                backgroundColor: Color(0xFF667EEA),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                  // Delete Button
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      margin: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.delete, color: Colors.red),
+                        onPressed: _deleteAchievement,
+                      ),
+                    ),
+                  ),
+                  
+                  // Share Button
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      margin: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.share, color: Colors.white),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(Icons.share, color: Colors.white),
+                                  SizedBox(width: 12),
+                                  Text('Share feature coming soon!'),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                              backgroundColor: Color(0xFF667EEA),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -612,7 +700,7 @@ class _DetailScreenState extends State<DetailScreen>
 
                               SizedBox(height: 32),
 
-                              // Additional Info Section - Hanya Date dan Category
+                              // Additional Info Section
                               ScaleTransition(
                                 scale: _scaleAnimation,
                                 child: Container(
@@ -626,7 +714,7 @@ class _DetailScreenState extends State<DetailScreen>
                                     ),
                                   ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                                     children: [
                                       _buildInfoItem(
                                         Icons.calendar_today, 
@@ -639,6 +727,11 @@ class _DetailScreenState extends State<DetailScreen>
                                         Icons.category, 
                                         'Category', 
                                         achievement?.category ?? 'General'
+                                      ),
+                                      _buildInfoItem(
+                                        Icons.auto_awesome, 
+                                        'Status', 
+                                        isFavorite ? 'Favorite' : 'Standard'
                                       ),
                                     ],
                                   ),

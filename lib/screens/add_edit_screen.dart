@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -35,7 +34,7 @@ class _AddEditScreenState extends State<AddEditScreen>
   bool _isLoading = false;
   bool _isImageHovered = false;
 
-  // Animations
+  // Enhanced Animations
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
@@ -46,7 +45,7 @@ class _AddEditScreenState extends State<AddEditScreen>
   void initState() {
     super.initState();
 
-    // Initialize animations
+    // Initialize enhanced animations
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -98,7 +97,11 @@ class _AddEditScreenState extends State<AddEditScreen>
     } else {
       _titleController = TextEditingController();
       _descController = TextEditingController();
-      _selectedCategoryName = 'Work'; // Default category
+      // Set default category jika ada
+      final categories = context.read<CategoryProvider>().categories;
+      if (categories.isNotEmpty) {
+        _selectedCategoryName = categories.first.name;
+      }
     }
   }
 
@@ -151,7 +154,7 @@ class _AddEditScreenState extends State<AddEditScreen>
     if (imageBytes != null) {
       setState(() {
         _selectedImageBytes = imageBytes;
-        _existingImagePath = null; // Clear existing image when new one is selected
+        _existingImagePath = null; // Clear existing image path when new image is selected
       });
     }
   }
@@ -170,7 +173,6 @@ class _AddEditScreenState extends State<AddEditScreen>
 
     if (!isValid) return;
 
-    _formKey.currentState?.save();
     setState(() {
       _isLoading = true;
     });
@@ -187,6 +189,12 @@ class _AddEditScreenState extends State<AddEditScreen>
           description: _descController.text,
           newImageBytes: _selectedImageBytes,
         );
+        
+        _showSnackBar(
+          'Achievement updated successfully!',
+          Icons.check_circle,
+          Colors.green,
+        );
       } else {
         await provider.addAchievement(
           title: _titleController.text,
@@ -195,10 +203,16 @@ class _AddEditScreenState extends State<AddEditScreen>
           description: _descController.text,
           imageBytes: _selectedImageBytes,
         );
+        
+        _showSnackBar(
+          'Achievement created successfully!',
+          Icons.check_circle,
+          Colors.green,
+        );
       }
 
       if (mounted) {
-        Navigator.of(context).pop(true); // Return success
+        Navigator.of(context).pop();
       }
     } catch (error) {
       setState(() {
@@ -206,71 +220,6 @@ class _AddEditScreenState extends State<AddEditScreen>
       });
       _showSnackBar(
         'Failed to save: $error',
-        Icons.error,
-        Colors.red,
-      );
-    }
-  }
-
-  void _deleteAchievement() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Color(0xFF1E293B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Delete Achievement',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to delete this achievement? This action cannot be undone.',
-            style: TextStyle(color: Color(0xFF94A3B8)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Color(0xFF667EEA))),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _confirmDelete();
-              },
-              child: Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _confirmDelete() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final provider = context.read<AchievementProvider>();
-      await provider.deleteAchievement(widget.achievementToEdit!.id);
-      
-      if (mounted) {
-        Navigator.of(context).pop('deleted');
-      }
-    } catch (error) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showSnackBar(
-        'Failed to delete: $error',
         Icons.error,
         Colors.red,
       );
@@ -294,6 +243,13 @@ class _AddEditScreenState extends State<AddEditScreen>
         duration: Duration(seconds: 3),
       ),
     );
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImageBytes = null;
+      _existingImagePath = null;
+    });
   }
 
   Widget _buildCategoryChips() {
@@ -379,8 +335,24 @@ class _AddEditScreenState extends State<AddEditScreen>
                 child: InkWell(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ManageCategoriesScreen(),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOutCubic,
+                            )),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        transitionDuration: Duration(milliseconds: 600),
                       ),
                     );
                   },
@@ -417,11 +389,13 @@ class _AddEditScreenState extends State<AddEditScreen>
         Wrap(
           spacing: 12.0,
           runSpacing: 12.0,
-          children: categories.map((category) {
+          children: categories.asMap().entries.map((entry) {
+            final index = entry.key;
+            final category = entry.value;
             final isSelected = _selectedCategoryName == category.name;
             
             return AnimatedContainer(
-              duration: Duration(milliseconds: 400),
+              duration: Duration(milliseconds: 400 + (index * 100)),
               curve: Curves.easeOutCubic,
               child: FilterChip(
                 label: Text(
@@ -472,8 +446,24 @@ class _AddEditScreenState extends State<AddEditScreen>
               child: InkWell(
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ManageCategoriesScreen(),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => ManageCategoriesScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(1.0, 0.0),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOutCubic,
+                          )),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      transitionDuration: Duration(milliseconds: 600),
                     ),
                   );
                 },
@@ -505,11 +495,128 @@ class _AddEditScreenState extends State<AddEditScreen>
   }
 
   Widget _buildImagePreview() {
-    Widget imageContent;
+    final hasImage = _selectedImageBytes != null || (_existingImagePath != null && _existingImagePath!.isNotEmpty);
 
+    return Stack(
+      children: [
+        MouseRegion(
+          onEnter: (_) => setState(() => _isImageHovered = true),
+          onExit: (_) => setState(() => _isImageHovered = false),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            width: 180,
+            height: 180,
+            decoration: BoxDecoration(
+              color: Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _isImageHovered ? Color(0xFF667EEA) : Color(0xFF334155),
+                width: _isImageHovered ? 3 : 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(_isImageHovered ? 0.5 : 0.3),
+                  blurRadius: _isImageHovered ? 25 : 15,
+                  offset: Offset(0, _isImageHovered ? 10 : 5),
+                  spreadRadius: _isImageHovered ? 2 : 0,
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                onTap: _pickImage,
+                borderRadius: BorderRadius.circular(20),
+                splashColor: Color(0xFF667EEA).withOpacity(0.3),
+                highlightColor: Color(0xFF667EEA).withOpacity(0.1),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: _buildImageContent(),
+                    ),
+                    if (_isImageHovered)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: Color(0xFF667EEA).withOpacity(0.1),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0xFF667EEA).withOpacity(0.05),
+                                Color(0xFF667EEA).withOpacity(0.15),
+                              ],
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.camera_alt,
+                                  color: Color(0xFF667EEA),
+                                  size: 40,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  hasImage ? 'Change Image' : 'Select Image',
+                                  style: TextStyle(
+                                    color: Color(0xFF667EEA),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        
+        // Remove Image Button
+        if (hasImage)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: _removeImage,
+              child: Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildImageContent() {
     if (_selectedImageBytes != null) {
-      // Newly selected image
-      imageContent = ClipRRect(
+      // Gambar yang baru dipilih (dari memory)
+      return ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Image.memory(
           _selectedImageBytes!,
@@ -519,21 +626,24 @@ class _AddEditScreenState extends State<AddEditScreen>
         ),
       );
     } else if (_existingImagePath != null && _existingImagePath!.isNotEmpty) {
-      // Existing image from database
+      // Gambar yang sudah ada di database
       if (_existingImagePath!.startsWith('assets/')) {
-        // Asset image
-        imageContent = ClipRRect(
+        // Gambar dari assets
+        return ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
             _existingImagePath!,
             fit: BoxFit.cover,
             width: 180,
             height: 180,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildImagePlaceholder();
+            },
           ),
         );
       } else if (_existingImagePath!.startsWith('http')) {
-        // Network image
-        imageContent = ClipRRect(
+        // Gambar dari network (URL)
+        return ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.network(
             _existingImagePath!,
@@ -546,90 +656,13 @@ class _AddEditScreenState extends State<AddEditScreen>
           ),
         );
       } else {
-        // Local file path
-        imageContent = ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Image.file(
-            File(_existingImagePath!),
-            fit: BoxFit.cover,
-            width: 180,
-            height: 180,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildImagePlaceholder();
-            },
-          ),
-        );
+        // Untuk local file path di web, gunakan placeholder
+        return _buildImagePlaceholder();
       }
     } else {
       // Placeholder
-      imageContent = _buildImagePlaceholder();
+      return _buildImagePlaceholder();
     }
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isImageHovered = true),
-      onExit: (_) => setState(() => _isImageHovered = false),
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        width: 180,
-        height: 180,
-        decoration: BoxDecoration(
-          color: Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: _isImageHovered ? Color(0xFF667EEA) : Color(0xFF334155),
-            width: _isImageHovered ? 3 : 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(_isImageHovered ? 0.5 : 0.3),
-              blurRadius: _isImageHovered ? 25 : 15,
-              offset: Offset(0, _isImageHovered ? 10 : 5),
-              spreadRadius: _isImageHovered ? 2 : 0,
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          child: InkWell(
-            onTap: _pickImage,
-            borderRadius: BorderRadius.circular(20),
-            splashColor: Color(0xFF667EEA).withOpacity(0.3),
-            highlightColor: Color(0xFF667EEA).withOpacity(0.1),
-            child: Stack(
-              children: [
-                Center(child: imageContent),
-                if (_isImageHovered)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: Color(0xFF667EEA).withOpacity(0.1),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF667EEA).withOpacity(0.05),
-                            Color(0xFF667EEA).withOpacity(0.15),
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.camera_alt,
-                          color: Color(0xFF667EEA),
-                          size: 40,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildImagePlaceholder() {
@@ -659,26 +692,13 @@ class _AddEditScreenState extends State<AddEditScreen>
           return CustomScrollView(
             physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
-              // Enhanced App Bar
+              // Enhanced Modern App Bar
               SliverAppBar(
-                expandedHeight: 180.0,
+                expandedHeight: 200.0,
                 floating: false,
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
-                leading: Padding(
-                  padding: const EdgeInsets.only(left: 8.0, top: 8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -688,11 +708,35 @@ class _AddEditScreenState extends State<AddEditScreen>
                         colors: [
                           Color(0xFF667EEA),
                           Color(0xFF764BA2),
+                          Color(0xFFF093FB),
                         ],
+                        stops: [0.0, 0.6, 1.0],
                       ),
                     ),
                     child: Stack(
                       children: [
+                        // Animated Background Elements
+                        Positioned(
+                          top: -60,
+                          right: -60,
+                          child: AnimatedContainer(
+                            duration: Duration(seconds: 20),
+                            curve: Curves.linear,
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.15),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        // Content
                         Padding(
                           padding: const EdgeInsets.all(24.0),
                           child: Column(
@@ -741,7 +785,7 @@ class _AddEditScreenState extends State<AddEditScreen>
                                             Text(
                                               _isEditMode 
                                                   ? "Update your achievement details"
-                                                  : "Create a new achievement",
+                                                  : "Create a new achievement to track your progress",
                                               style: TextStyle(
                                                 color: Colors.white.withOpacity(0.8),
                                                 fontSize: 14,
@@ -762,22 +806,6 @@ class _AddEditScreenState extends State<AddEditScreen>
                   ),
                 ),
                 actions: [
-                  if (_isEditMode)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0, top: 8.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: _deleteAchievement,
-                          tooltip: 'Delete',
-                        ),
-                      ),
-                    ),
-                  SizedBox(width: 8),
                   if (_isLoading)
                     Padding(
                       padding: EdgeInsets.only(right: 16.0),
@@ -789,21 +817,12 @@ class _AddEditScreenState extends State<AddEditScreen>
                       ),
                     )
                   else
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0, top: 8.0),
-                      child: ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: IconButton(
-                            icon: Icon(Icons.save, color: Colors.white),
-                            onPressed: _saveForm,
-                            tooltip: 'Save',
-                          ),
-                        ),
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: IconButton(
+                        icon: Icon(Icons.save, color: Colors.white),
+                        onPressed: _saveForm,
+                        tooltip: 'Save Achievement',
                       ),
                     ),
                 ],
@@ -850,6 +869,9 @@ class _AddEditScreenState extends State<AddEditScreen>
                                       if (value == null || value.isEmpty) {
                                         return 'Title is required';
                                       }
+                                      if (value.length < 3) {
+                                        return 'Title must be at least 3 characters long';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -878,77 +900,127 @@ class _AddEditScreenState extends State<AddEditScreen>
                                       if (value == null || value.isEmpty) {
                                         return 'Description is required';
                                       }
+                                      if (value.length < 10) {
+                                        return 'Description must be at least 10 characters long';
+                                      }
                                       return null;
                                     },
                                   ),
                                   SizedBox(height: 40),
 
-                                  // Save Button
-                                  AnimatedBuilder(
-                                    animation: _colorAnimation,
-                                    builder: (context, child) {
-                                      return Container(
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16),
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Color(0xFF667EEA),
-                                              Color(0xFF764BA2),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: _colorAnimation.value!.withOpacity(0.5),
-                                              blurRadius: 25,
-                                              offset: Offset(0, 10),
-                                              spreadRadius: 2,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: _saveForm,
+                                  // Action Buttons
+                                  Row(
+                                    children: [
+                                      // Cancel Button
+                                      Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(16),
-                                            splashColor: Colors.white.withOpacity(0.2),
-                                            highlightColor: Colors.white.withOpacity(0.1),
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(vertical: 18),
-                                              child: Center(
-                                                child: _isLoading
-                                                    ? SizedBox(
-                                                        height: 24,
-                                                        width: 24,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 3,
-                                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                        ),
-                                                      )
-                                                    : Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                                                          Icon(Icons.save, color: Colors.white, size: 20),
-                                                          SizedBox(width: 12),
-                                                          Text(
-                                                            _isEditMode ? 'UPDATE ACHIEVEMENT' : 'CREATE ACHIEVEMENT',
-                                                            style: TextStyle(
-                                                              color: Colors.white,
-                                                              fontWeight: FontWeight.bold,
-                                                              fontSize: 16,
-                                                              letterSpacing: 1.2,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
+                                            border: Border.all(color: Color(0xFF475569), width: 2),
+                                            color: Color(0xFF1E293B),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.3),
+                                                blurRadius: 15,
+                                                offset: Offset(0, 6),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              borderRadius: BorderRadius.circular(16),
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(vertical: 18),
+                                                child: Center(
+                                                  child: Text(
+                                                    'CANCEL',
+                                                    style: TextStyle(
+                                                      color: Color(0xFF94A3B8),
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                      letterSpacing: 1.2,
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      );
-                                    },
+                                      ),
+                                      SizedBox(width: 16),
+                                      // Save Button
+                                      Expanded(
+                                        child: AnimatedBuilder(
+                                          animation: _colorAnimation,
+                                          builder: (context, child) {
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(16),
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF667EEA),
+                                                    Color(0xFF764BA2),
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: _colorAnimation.value!.withOpacity(0.5),
+                                                    blurRadius: 25,
+                                                    offset: Offset(0, 10),
+                                                    spreadRadius: 2,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: _saveForm,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  splashColor: Colors.white.withOpacity(0.2),
+                                                  highlightColor: Colors.white.withOpacity(0.1),
+                                                  child: Container(
+                                                    padding: EdgeInsets.symmetric(vertical: 18),
+                                                    child: Center(
+                                                      child: _isLoading
+                                                          ? SizedBox(
+                                                              height: 24,
+                                                              width: 24,
+                                                              child: CircularProgressIndicator(
+                                                                strokeWidth: 3,
+                                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                              ),
+                                                            )
+                                                          : Row(
+                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                              children: [
+                                                                Icon(Icons.save, color: Colors.white, size: 20),
+                                                                SizedBox(width: 12),
+                                                                Text(
+                                                                  _isEditMode ? 'UPDATE' : 'CREATE',
+                                                                  style: TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontWeight: FontWeight.bold,
+                                                                    fontSize: 16,
+                                                                    letterSpacing: 1.2,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   SizedBox(height: 20),
                                 ],
@@ -1036,11 +1108,25 @@ class _AddEditScreenState extends State<AddEditScreen>
                   width: 2,
                 ),
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.red,
+                  width: 2,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.red,
+                  width: 2,
+                ),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: maxLines > 1 ? 16 : 18),
               prefixIcon: Icon(icon, color: Color(0xFF667EEA), size: 22),
             ),
             maxLines: maxLines,
-            textInputAction: TextInputAction.next,
+            textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
             validator: validator,
           ),
         ),
@@ -1071,8 +1157,12 @@ class _AddEditScreenState extends State<AddEditScreen>
           child: Icon(Icons.calendar_today, color: Color(0xFF667EEA), size: 22),
         ),
         title: Text(
-          DateFormat('d MMMM yyyy').format(_selectedDate),
+          DateFormat('EEEE, d MMMM yyyy').format(_selectedDate),
           style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          'Selected date',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
         ),
         trailing: Container(
           decoration: BoxDecoration(
@@ -1101,7 +1191,7 @@ class _AddEditScreenState extends State<AddEditScreen>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Text(
-                  'Select Date',
+                  'Change Date',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
