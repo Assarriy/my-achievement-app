@@ -699,6 +699,22 @@ class _AddEditScreenState extends State<AddEditScreen>
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -819,10 +835,17 @@ class _AddEditScreenState extends State<AddEditScreen>
                   else
                     ScaleTransition(
                       scale: _scaleAnimation,
-                      child: IconButton(
-                        icon: Icon(Icons.save, color: Colors.white),
-                        onPressed: _saveForm,
-                        tooltip: 'Save Achievement',
+                      child: Container(
+                        margin: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.save, color: Colors.white),
+                          onPressed: _saveForm,
+                          tooltip: 'Save Achievement',
+                        ),
                       ),
                     ),
                 ],

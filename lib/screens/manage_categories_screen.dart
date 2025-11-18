@@ -515,6 +515,22 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen>
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -563,19 +579,22 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen>
                                   opacity: _fadeAnimation.value,
                                   child: Row(
                                     children: [
-                                      Container(
-                                        padding: EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(0.3),
+                                      ScaleTransition(
+                                        scale: _scaleAnimation,
+                                        child: Container(
+                                          padding: EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(0.3),
+                                            ),
                                           ),
-                                        ),
-                                        child: Icon(
-                                          Icons.category,
-                                          color: Colors.white,
-                                          size: 32,
+                                          child: Icon(
+                                            Icons.category,
+                                            color: Colors.white,
+                                            size: 32,
+                                          ),
                                         ),
                                       ),
                                       SizedBox(width: 16),

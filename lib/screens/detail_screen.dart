@@ -238,6 +238,22 @@ class _DetailScreenState extends State<DetailScreen>
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     children: [
